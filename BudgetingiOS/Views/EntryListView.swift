@@ -4,10 +4,16 @@ import BudgetingKit
 
 struct EntryListView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: BudgetViewModel?
+    @Query(sort: [SortDescriptor(\Entry.date, order: .reverse), SortDescriptor(\Entry.item)])
+    private var entries: [Entry]
+
+    @Query(sort: [SortDescriptor(\Tag.name)])
+    private var tags: [Tag]
+
     @State private var selectedMonth = Date()
     @State private var showingAddSheet = false
     @State private var entryToEdit: Entry?
+    @State private var searchText = ""
 
     private var month: Int {
         Calendar.current.component(.month, from: selectedMonth)
@@ -18,41 +24,40 @@ struct EntryListView: View {
     }
 
     private var monthEntries: [Entry] {
-        viewModel?.entriesForMonth(month, year: year) ?? []
+        let filtered = BudgetStore.entriesForMonth(entries, month: month, year: year)
+        guard !searchText.isEmpty else { return filtered }
+        return BudgetStore.searchEntries(filtered, query: searchText)
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if let vm = viewModel {
-                    if monthEntries.isEmpty {
-                        ContentUnavailableView(
-                            "No entries",
-                            systemImage: "tray",
-                            description: Text("Add an entry for \(selectedMonth.formatted(.dateTime.year().month(.wide)))")
-                        )
-                    } else {
-                        List {
-                            ForEach(monthEntries, id: \.id) { entry in
-                                EntryRowView(entry: entry)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        entryToEdit = entry
-                                    }
-                            }
-                            .onDelete { offsets in
-                                for index in offsets {
-                                    if let entry = monthEntries[safe: index] {
-                                        vm.deleteEntry(entry)
-                                    }
+                if monthEntries.isEmpty {
+                    ContentUnavailableView(
+                        "No entries",
+                        systemImage: "tray",
+                        description: Text("Add an entry for \(selectedMonth.formatted(.dateTime.year().month(.wide)))")
+                    )
+                } else {
+                    List {
+                        ForEach(monthEntries, id: \.id) { entry in
+                            EntryRowView(entry: entry)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    entryToEdit = entry
+                                }
+                        }
+                        .onDelete { offsets in
+                            for index in offsets {
+                                if let entry = monthEntries[safe: index] {
+                                    BudgetStore.deleteEntry(entry, context: modelContext)
                                 }
                             }
                         }
                     }
-                } else {
-                    ProgressView()
                 }
             }
+            .searchable(text: $searchText, prompt: "Search entries")
             .navigationTitle("Entries")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -72,14 +77,6 @@ struct EntryListView: View {
             .sheet(item: $entryToEdit) { entry in
                 AddEditEntryView(mode: .edit(entry))
             }
-        }
-        .onAppear {
-            if viewModel == nil {
-                viewModel = BudgetViewModel(modelContext: modelContext)
-            }
-        }
-        .onChange(of: selectedMonth) {
-            viewModel?.fetchAll()
         }
     }
 }

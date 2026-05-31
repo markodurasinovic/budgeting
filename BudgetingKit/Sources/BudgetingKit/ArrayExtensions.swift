@@ -5,3 +5,9 @@ public extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
+
+public extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
+    }
+}

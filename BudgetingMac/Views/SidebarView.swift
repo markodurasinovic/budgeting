@@ -1,31 +1,87 @@
 import SwiftUI
+import SwiftData
 import BudgetingKit
 
 struct SidebarView: View {
-    let viewModel: BudgetViewModel?
+    @Query(sort: [SortDescriptor(\Entry.date, order: .reverse)])
+    private var entries: [Entry]
+
+    @Query(sort: [SortDescriptor(\Tag.name)])
+    private var tags: [Tag]
+
     @Binding var selectedMonth: Date
     @Binding var selectedTag: String?
 
-    private var tagNames: [String] {
-        viewModel?.allTagNames() ?? []
+    private var monthName: String {
+        selectedMonth.formatted(.dateTime.year().month(.wide))
+    }
+
+    private var entryCountForTag: [String: Int] {
+        var counts: [String: Int] = [:]
+        for entry in entries {
+            counts[entry.tag, default: 0] += 1
+        }
+        return counts
     }
 
     var body: some View {
         List(selection: $selectedTag) {
-            Section("Months") {
-                MonthNavigationRow(date: selectedMonth, selectedMonth: $selectedMonth)
+            Section("Filter") {
+                Label("All Entries", systemImage: "list.bullet")
+                    .tag("___ALL___" as String)
             }
 
-            if !tagNames.isEmpty {
+            Section("Months") {
+                HStack {
+                    Button {
+                        if let prev = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth) {
+                            selectedMonth = prev
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    .buttonStyle(.borderless)
+
+                    Spacer()
+
+                    Text(monthName)
+                        .font(.headline)
+
+                    Spacer()
+
+                    Button {
+                        if let next = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth) {
+                            selectedMonth = next
+                        }
+                    } label: {
+                        Image(systemName: "chevron.right")
+                    }
+                    .buttonStyle(.borderless)
+
+                    Spacer()
+
+                    Button("Today") {
+                        selectedMonth = Date()
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+
+            if !tags.isEmpty {
                 Section("Tags") {
-                    ForEach(tagNames, id: \.self) { tag in
+                    ForEach(tags, id: \.name) { tag in
+                        let count = entryCountForTag[tag.name, default: 0]
                         HStack {
                             Circle()
-                                .fill(Color.hex(tag, from: viewModel?.tagColor(for: tag)))
+                                .fill(Color.hex(tag.name, from: tag.colorHex.isEmpty ? nil : tag.colorHex))
                                 .frame(width: 10, height: 10)
-                            Text(tag)
+                            Text(tag.name)
+                            Spacer()
+                            Text("\(count)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        .tag(tag)
+                        .tag(tag.name as String)
                     }
                 }
             }
@@ -35,52 +91,7 @@ struct SidebarView: View {
     }
 }
 
-struct MonthNavigationRow: View {
-    let date: Date
-    @Binding var selectedMonth: Date
-
-    private var monthName: String {
-        date.formatted(.dateTime.year().month(.wide))
-    }
-
-    var body: some View {
-        HStack {
-            Button {
-                if let prev = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth) {
-                    selectedMonth = prev
-                }
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-            .buttonStyle(.borderless)
-
-            Spacer()
-
-            Text(monthName)
-                .font(.headline)
-
-            Spacer()
-
-            Button {
-                if let next = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth) {
-                    selectedMonth = next
-                }
-            } label: {
-                Image(systemName: "chevron.right")
-            }
-            .buttonStyle(.borderless)
-
-            Spacer()
-
-            Button("Today") {
-                selectedMonth = Date()
-            }
-            .buttonStyle(.borderless)
-        }
-    }
-}
-
 #Preview {
-    SidebarView(viewModel: nil, selectedMonth: .constant(Date()), selectedTag: .constant(nil))
+    SidebarView(selectedMonth: .constant(Date()), selectedTag: .constant(nil))
         .modelContainer(BudgetingContainer.makePreviewContainer())
 }

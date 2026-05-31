@@ -6,6 +6,9 @@ struct MacAddEditEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    @Query(sort: [SortDescriptor(\Tag.name)])
+    private var tags: [Tag]
+
     enum Mode {
         case add
         case edit(Entry)
@@ -17,11 +20,17 @@ struct MacAddEditEntryView: View {
     @State private var item = ""
     @State private var tag = ""
     @State private var amountText = ""
-    @State private var viewModel: BudgetViewModel?
 
     private var isEditing: Bool {
         if case .edit = mode { return true }
         return false
+    }
+
+    private var tagSuggestions: [String] {
+        let allNames = tags.map(\.name)
+        return allNames.filter { existing in
+            !tag.isEmpty && existing.localizedCaseInsensitiveContains(tag) && existing != tag
+        }
     }
 
     var body: some View {
@@ -30,20 +39,21 @@ struct MacAddEditEntryView: View {
                 .font(.headline)
 
             Form {
-                DatePicker("Date", selection: $date, displayedComponents: .date)
                 TextField("Item", text: $item)
-                TextField("Tag", text: $tag)
+                TextField("Tag (optional)", text: $tag)
                 TextField("Amount", text: $amountText)
+                DatePicker("Date", selection: $date, displayedComponents: .date)
 
-                if let vm = viewModel {
-                    let suggestions = vm.allTagNames().filter { existing in
-                        !tag.isEmpty && existing.localizedCaseInsensitiveContains(tag) && existing != tag
-                    }
-                    if !suggestions.isEmpty {
-                        LabeledContent("Suggestions") {
-                            WrappingHStack(tags: suggestions, onSelect: { selected in
-                                tag = selected
-                            })
+                if !tagSuggestions.isEmpty {
+                    LabeledContent("Suggestions") {
+                        HStack(spacing: 6) {
+                            ForEach(tagSuggestions, id: \.self) { suggestion in
+                                Button(suggestion) {
+                                    tag = suggestion
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
                         }
                     }
                 }
@@ -53,6 +63,11 @@ struct MacAddEditEntryView: View {
             HStack {
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
+                if isEditing {
+                    Button("Delete", role: .destructive) {
+                        deleteEntry()
+                    }
+                }
                 Spacer()
                 Button(isEditing ? "Save" : "Add") {
                     saveEntry()
@@ -71,57 +86,34 @@ struct MacAddEditEntryView: View {
                 tag = entry.tag
                 amountText = MoneyHelper.format(entry.amount).replacingOccurrences(of: "£", with: "")
             }
-            viewModel = BudgetViewModel(modelContext: modelContext)
         }
     }
 
     private var isValid: Bool {
         !item.trimmingCharacters(in: .whitespaces).isEmpty
-            && !tag.trimmingCharacters(in: .whitespaces).isEmpty
             && MoneyHelper.parse(amountText) != nil
     }
 
     private func saveEntry() {
-        guard let amount = MoneyHelper.parse(amountText),
-              let vm = viewModel else { return }
+        guard let amount = MoneyHelper.parse(amountText) else { return }
 
         let trimmedItem = item.trimmingCharacters(in: .whitespaces)
-        let trimmedTag = tag.trimmingCharacters(in: .whitespaces)
+        let trimmedTag = tag.trimmingCharacters(in: .whitespaces).nilIfEmpty
 
         switch mode {
         case .add:
-            vm.addEntry(date: date, item: trimmedItem, tag: trimmedTag, amount: amount)
+            BudgetStore.addEntry(date: date, item: trimmedItem, tag: trimmedTag, amount: amount, context: modelContext)
         case .edit(let entry):
-            vm.updateEntry(entry, date: date, item: trimmedItem, tag: trimmedTag, amount: amount)
+            BudgetStore.updateEntry(entry, date: date, item: trimmedItem, tag: trimmedTag, amount: amount, context: modelContext)
         }
 
         dismiss()
     }
-}
 
-struct WrappingHStack: View {
-    let tags: [String]
-    let onSelect: (String) -> Void
-
-    var body: some View {
-        FlowLayout(tags: tags, onSelect: onSelect)
-    }
-}
-
-struct FlowLayout: View {
-    let tags: [String]
-    let onSelect: (String) -> Void
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(tags, id: \.self) { tag in
-                Button(tag) {
-                    onSelect(tag)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-        }
+    private func deleteEntry() {
+        guard case .edit(let entry) = mode else { return }
+        BudgetStore.deleteEntry(entry, context: modelContext)
+        dismiss()
     }
 }
 

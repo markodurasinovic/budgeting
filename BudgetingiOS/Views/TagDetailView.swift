@@ -7,16 +7,19 @@ struct TagDetailView: View {
     let month: Int
     let year: Int
 
-    @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: BudgetViewModel?
+    @Query(sort: [SortDescriptor(\Entry.date, order: .reverse), SortDescriptor(\Entry.item)])
+    private var entries: [Entry]
 
-    private var entries: [Entry] {
-        (viewModel?.entriesForMonth(month, year: year) ?? [])
+    @Query(sort: [SortDescriptor(\Tag.name)])
+    private var tags: [Tag]
+
+    private var tagEntries: [Entry] {
+        BudgetStore.entriesForMonth(entries, month: month, year: year)
             .filter { $0.tag == tagName }
     }
 
     private var total: Decimal {
-        entries.reduce(Decimal(0)) { $0 + $1.amount }
+        tagEntries.reduce(Decimal(0)) { $0 + $1.amount }
     }
 
     var body: some View {
@@ -33,21 +36,16 @@ struct TagDetailView: View {
             }
 
             Section("Entries") {
-                if entries.isEmpty {
+                if tagEntries.isEmpty {
                     Text("No entries for \(tagName) this month")
                         .foregroundStyle(.secondary)
                 }
-                ForEach(entries, id: \.id) { entry in
+                ForEach(tagEntries, id: \.id) { entry in
                     EntryRowView(entry: entry)
                 }
             }
         }
         .navigationTitle(tagName)
-        .onAppear {
-            if viewModel == nil {
-                viewModel = BudgetViewModel(modelContext: modelContext)
-            }
-        }
     }
 }
 
