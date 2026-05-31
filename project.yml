@@ -1,0 +1,65 @@
+name: Budgeting
+options:
+  bundleIdPrefix: com.markodurasinovic
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+  generateEmptyDirectories: true
+  xcodeVersion: "16.0"
+
+packages:
+  BudgetingKit:
+    path: ./BudgetingKit
+
+targets:
+  BudgetingiOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: BudgetingiOS
+    dependencies:
+      - package: BudgetingKit
+    entitlements:
+      path: BudgetingiOS/BudgetingiOS.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.markodurasinovic.Budgeting.iOS
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+
+  BudgetingMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: BudgetingMac
+    dependencies:
+      - package: BudgetingKit
+    entitlements:
+      path: BudgetingMac/BudgetingMac.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.markodurasinovic.Budgeting.Mac
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
