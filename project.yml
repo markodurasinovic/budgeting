@@ -37,8 +37,10 @@ targets:
       configs:
         Debug:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
+          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
 
   BudgetingMac:
     type: application
@@ -61,5 +63,7 @@ targets:
       configs:
         Debug:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
+          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES

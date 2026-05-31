@@ -11,13 +11,15 @@ struct AddEditEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    @Query(sort: [SortDescriptor(\Tag.name)])
+    private var tags: [Tag]
+
     let mode: AddEditMode
 
     @State private var date = Date()
     @State private var item = ""
     @State private var tag = ""
     @State private var amountText = ""
-    @State private var viewModel: BudgetViewModel?
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -29,6 +31,13 @@ struct AddEditEntryView: View {
         return false
     }
 
+    private var tagSuggestions: [String] {
+        let allNames = tags.map(\.name)
+        return allNames.filter { existing in
+            !tag.isEmpty && existing.localizedCaseInsensitiveContains(tag) && existing != tag
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -38,7 +47,7 @@ struct AddEditEntryView: View {
                     TextField("Item", text: $item)
                         .focused($focusedField, equals: .item)
 
-                    TextField("Tag", text: $tag)
+                    TextField("Tag (optional)", text: $tag)
                         .focused($focusedField, equals: .tag)
 
                     TextField("Amount", text: $amountText)
@@ -46,17 +55,20 @@ struct AddEditEntryView: View {
                         .keyboardType(.decimalPad)
                 }
 
-                if let vm = viewModel {
-                    let suggestions = vm.allTagNames().filter { existing in
-                        !tag.isEmpty && existing.localizedCaseInsensitiveContains(tag) && existing != tag
-                    }
-                    if !suggestions.isEmpty {
-                        Section("Suggestions") {
-                            ForEach(suggestions, id: \.self) { suggestion in
-                                Button(suggestion) {
-                                    tag = suggestion
-                                }
+                if !tagSuggestions.isEmpty {
+                    Section("Suggestions") {
+                        ForEach(tagSuggestions, id: \.self) { suggestion in
+                            Button(suggestion) {
+                                tag = suggestion
                             }
+                        }
+                    }
+                }
+
+                if isEditing {
+                    Section {
+                        Button("Delete Entry", role: .destructive) {
+                            deleteEntry()
                         }
                     }
                 }
@@ -82,31 +94,34 @@ struct AddEditEntryView: View {
                     amountText = MoneyHelper.format(entry.amount).replacingOccurrences(of: "£", with: "")
                 }
                 focusedField = .item
-                viewModel = BudgetViewModel(modelContext: modelContext)
             }
         }
     }
 
     private var isValid: Bool {
         !item.trimmingCharacters(in: .whitespaces).isEmpty
-            && !tag.trimmingCharacters(in: .whitespaces).isEmpty
             && MoneyHelper.parse(amountText) != nil
     }
 
     private func saveEntry() {
-        guard let amount = MoneyHelper.parse(amountText),
-              let vm = viewModel else { return }
+        guard let amount = MoneyHelper.parse(amountText) else { return }
 
         let trimmedItem = item.trimmingCharacters(in: .whitespaces)
-        let trimmedTag = tag.trimmingCharacters(in: .whitespaces)
+        let trimmedTag = tag.trimmingCharacters(in: .whitespaces).nilIfEmpty
 
         switch mode {
         case .add:
-            vm.addEntry(date: date, item: trimmedItem, tag: trimmedTag, amount: amount)
+            BudgetStore.addEntry(date: date, item: trimmedItem, tag: trimmedTag, amount: amount, context: modelContext)
         case .edit(let entry):
-            vm.updateEntry(entry, date: date, item: trimmedItem, tag: trimmedTag, amount: amount)
+            BudgetStore.updateEntry(entry, date: date, item: trimmedItem, tag: trimmedTag, amount: amount, context: modelContext)
         }
 
+        dismiss()
+    }
+
+    private func deleteEntry() {
+        guard case .edit(let entry) = mode else { return }
+        BudgetStore.deleteEntry(entry, context: modelContext)
         dismiss()
     }
 }

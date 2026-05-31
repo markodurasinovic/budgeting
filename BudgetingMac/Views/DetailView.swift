@@ -1,8 +1,15 @@
 import SwiftUI
+import SwiftData
 import BudgetingKit
 
 struct DetailView: View {
-    let viewModel: BudgetViewModel?
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: [SortDescriptor(\Entry.date, order: .reverse), SortDescriptor(\Entry.item)])
+    private var entries: [Entry]
+
+    @Query(sort: [SortDescriptor(\Tag.name)])
+    private var tags: [Tag]
+
     let month: Int
     let year: Int
     let selectedTag: String?
@@ -10,26 +17,26 @@ struct DetailView: View {
     let onEditEntry: (Entry) -> Void
 
     @State private var searchText = ""
+    @State private var selectedEntries: Set<Entry.ID> = []
 
-    private var total: Decimal {
-        filteredEntries.reduce(Decimal(0)) { $0 + $1.amount }
+    private var effectiveTag: String? {
+        if let tag = selectedTag, tag != "___ALL___" { return tag }
+        return nil
     }
 
     private var filteredEntries: [Entry] {
-        let monthEntries: [Entry]
-        if let tag = selectedTag {
-            monthEntries = viewModel?.entriesForMonth(month, year: year)
-                .filter { $0.tag == tag } ?? []
+        let monthEntries = BudgetStore.entriesForMonth(entries, month: month, year: year)
+        let tagged: [Entry]
+        if let tag = effectiveTag {
+            tagged = monthEntries.filter { $0.tag == tag }
         } else {
-            monthEntries = viewModel?.entriesForMonth(month, year: year) ?? []
+            tagged = monthEntries
         }
+        return BudgetStore.searchEntries(tagged, query: searchText)
+    }
 
-        guard !searchText.isEmpty else { return monthEntries }
-        let lower = searchText.lowercased()
-        return monthEntries.filter {
-            $0.item.lowercased().contains(lower) ||
-            $0.tag.lowercased().contains(lower)
-        }
+    private var total: Decimal {
+        filteredEntries.reduce(Decimal(0)) { $0 + $1.amount }
     }
 
     var body: some View {
@@ -43,13 +50,13 @@ struct DetailView: View {
             }
         }
         .searchable(text: $searchText, prompt: "Search entries")
-        .navigationTitle(selectedTag ?? "All Entries")
+        .navigationTitle(effectiveTag ?? "All Entries")
     }
 
     private var headerBar: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(selectedTag ?? "All Entries")
+                Text(effectiveTag ?? "All Entries")
                     .font(.title2)
                     .fontWeight(.semibold)
                 Text(MoneyHelper.format(total))
@@ -76,7 +83,7 @@ struct DetailView: View {
     }
 
     private var entryTable: some View {
-        Table(filteredEntries) {
+        Table(filteredEntries, selection: $selectedEntries) {
             TableColumn("Date") { entry in
                 Text(entry.date.formatted(.dateTime.day().month(.abbreviated)))
             }
@@ -89,7 +96,7 @@ struct DetailView: View {
             TableColumn("Tag") { entry in
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(Color.hex(entry.tag, from: viewModel?.tagColor(for: entry.tag)))
+                        .fill(Color.hex(entry.tag, from: BudgetStore.tagColorHex(tags, for: entry.tag)))
                         .frame(width: 8, height: 8)
                     Text(entry.tag)
                 }
@@ -102,10 +109,23 @@ struct DetailView: View {
             .width(min: 100)
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))
+        .contextMenu(forSelectionType: Entry.ID.self) { items in
+            Button("Delete", systemImage: "trash") {
+                deleteSelected(items)
+            }
+        }
+        .onDeleteCommand {
+            deleteSelected(selectedEntries)
+        }
+    }
+
+    private func deleteSelected(_ ids: Set<Entry.ID>) {
+        let toDelete = filteredEntries.filter { ids.contains($0.id) }
+        BudgetStore.deleteEntries(toDelete, context: modelContext)
     }
 }
 
 #Preview {
-    DetailView(viewModel: nil, month: 5, year: 2026, selectedTag: nil, onAddEntry: {}, onEditEntry: { _ in })
+    DetailView(month: 5, year: 2026, selectedTag: nil, onAddEntry: {}, onEditEntry: { _ in })
         .modelContainer(BudgetingContainer.makePreviewContainer())
 }

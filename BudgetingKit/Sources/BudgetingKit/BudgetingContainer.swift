@@ -4,7 +4,7 @@ import SwiftData
 public enum BudgetingContainer {
     public static func makeModelContainer() -> ModelContainer {
         let schema = Schema([Entry.self, Tag.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .automatic)
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         return try! ModelContainer(for: schema, configurations: [config])
     }
 
