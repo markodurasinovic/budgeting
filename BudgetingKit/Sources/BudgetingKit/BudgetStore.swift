@@ -3,19 +3,21 @@ import SwiftData
 
 public enum BudgetStore {
     public static func addEntry(date: Date, item: String, tag: String?, amount: Decimal, context: ModelContext) {
-        let resolvedTag = tag?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? item.trimmingCharacters(in: .whitespaces)
-        ensureTagExists(named: resolvedTag, context: context)
+        let resolvedTag = resolveTag(tag?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "Uncategorised", context: context)
         let entry = Entry(date: date, item: item, tag: resolvedTag, amount: amount)
         context.insert(entry)
     }
 
     public static func updateEntry(_ entry: Entry, date: Date, item: String, tag: String?, amount: Decimal, context: ModelContext) {
-        let resolvedTag = tag?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? item.trimmingCharacters(in: .whitespaces)
+        let resolvedTag = resolveTag(tag?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "Uncategorised", context: context)
+        let oldTag = entry.tag
         entry.date = date
         entry.item = item
         entry.tag = resolvedTag
         entry.amount = amount
-        ensureTagExists(named: resolvedTag, context: context)
+        if oldTag != resolvedTag {
+            removeOrphanTag(named: oldTag, context: context)
+        }
     }
 
     public static func deleteEntry(_ entry: Entry, context: ModelContext) {
@@ -35,22 +37,39 @@ public enum BudgetStore {
         }
     }
 
-    private static func removeOrphanTag(named name: String, context: ModelContext) {
-        let descriptor = FetchDescriptor<Entry>(predicate: #Predicate { $0.tag == name })
-        let remaining = (try? context.fetch(descriptor).count) ?? 0
-        if remaining == 0 {
-            let tagDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.name == name })
-            if let tag = try? context.fetch(tagDescriptor).first {
-                context.delete(tag)
+    private static func resolveTag(_ rawName: String, context: ModelContext) -> String {
+        let trimmed = rawName.trimmingCharacters(in: .whitespaces)
+        let canonical = trimmed.capitalized
+        let lower = trimmed.lowercased()
+
+        let descriptor = FetchDescriptor<Tag>()
+        if let existingTags = try? context.fetch(descriptor) {
+            if let match = existingTags.first(where: { $0.name.lowercased() == lower }) {
+                if match.name != canonical {
+                    match.name = canonical
+                }
+                return canonical
             }
         }
+
+        let tag = Tag(name: canonical)
+        context.insert(tag)
+        return canonical
     }
 
-    public static func ensureTagExists(named name: String, context: ModelContext) {
-        let descriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.name == name })
-        if (try? context.fetch(descriptor).first) != nil { return }
-        let tag = Tag(name: name)
-        context.insert(tag)
+    private static func removeOrphanTag(named name: String, context: ModelContext) {
+        let lower = name.lowercased()
+        let descriptor = FetchDescriptor<Entry>()
+        let allEntries = (try? context.fetch(descriptor)) ?? []
+        let remaining = allEntries.filter { $0.tag.lowercased() == lower }.count
+        if remaining == 0 {
+            let tagDescriptor = FetchDescriptor<Tag>()
+            if let allTags = try? context.fetch(tagDescriptor) {
+                if let tagToDelete = allTags.first(where: { $0.name.lowercased() == lower }) {
+                    context.delete(tagToDelete)
+                }
+            }
+        }
     }
 
     public static func entriesForMonth(_ entries: [Entry], month: Int, year: Int) -> [Entry] {
@@ -75,7 +94,7 @@ public enum BudgetStore {
     }
 
     public static func tagColorHex(_ tags: [Tag], for tagName: String) -> String? {
-        tags.first(where: { $0.name == tagName })?.colorHex
+        tags.first(where: { $0.name.lowercased() == tagName.lowercased() })?.colorHex
     }
 
     public static func searchEntries(_ entries: [Entry], query: String) -> [Entry] {
@@ -84,6 +103,37 @@ public enum BudgetStore {
         return entries.filter {
             $0.item.lowercased().contains(lower) ||
             $0.tag.lowercased().contains(lower)
+        }
+    }
+
+    // MARK: - Monthly Budget
+
+    public static func budgetForMonth(_ month: Int, year: Int, context: ModelContext) -> MonthlyBudget {
+        let descriptor = FetchDescriptor<MonthlyBudget>(predicate: #Predicate { $0.month == month && $0.year == year })
+        if let existing = try? context.fetch(descriptor).first {
+            return existing
+        }
+        let budget = MonthlyBudget(month: month, year: year)
+        context.insert(budget)
+        return budget
+    }
+
+    public static func remainder(income: Decimal, expenses: Decimal, bills: Decimal, savings: Decimal, investment: Decimal) -> Decimal {
+        income - expenses - bills - savings - investment
+    }
+
+    public static func savingsRate(savings: Decimal, investment: Decimal, income: Decimal, remainder: Decimal) -> Decimal? {
+        guard income > 0 else { return nil }
+        return (savings + investment + remainder) / income
+    }
+
+    public static func runningTotalSavings(budgets: [MonthlyBudget], expensesByMonth: [(month: Int, year: Int, total: Decimal)]) -> Decimal {
+        let expenseMap = Dictionary(uniqueKeysWithValues: expensesByMonth.map { (key: "\($0.year)-\($0.month)", value: $0.total) })
+        return budgets.reduce(Decimal(0)) { total, budget in
+            let key = "\(budget.year)-\(budget.month)"
+            let expenses = expenseMap[key] ?? Decimal(0)
+            let remainder = budget.income - expenses - budget.bills - budget.savings - budget.investment
+            return total + budget.savings + budget.investment + remainder
         }
     }
 }

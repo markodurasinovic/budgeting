@@ -119,3 +119,66 @@ struct TagTests {
         #expect(tag.colorHex == "#4ECDC4")
     }
 }
+
+@Suite("CSVImporter")
+struct CSVImporterTests {
+    @Test("Parse simple CSV rows")
+    func parseSimpleRows() {
+        let csv = "Date,Item,Price\n4/1/2026,Coffee,3.75\n4/2/2026,Train,8.00"
+        let (rows, _) = CSVImporter.parse(content: csv)
+        #expect(rows.count == 3)
+        #expect(rows[1][0] == "4/1/2026")
+        #expect(rows[1][1] == "Coffee")
+        #expect(rows[1][2] == "3.75")
+    }
+
+    @Test("Parse quoted fields with commas")
+    func parseQuotedFields() {
+        let csv = "Date,Item,Price\n4/1/2026,Bills,\"1,002.00\""
+        let (rows, _) = CSVImporter.parse(content: csv)
+        #expect(rows.count == 2)
+        #expect(rows[1][2] == "1,002.00")
+    }
+
+    @Test("Handle extra columns gracefully")
+    func handleExtraColumns() {
+        let csv = "Date,Item,Price,,Extra1,Extra2\n4/1/2026,Coffee,3.75,,foo,bar"
+        let (rows, _) = CSVImporter.parse(content: csv)
+        #expect(rows.count == 2)
+        #expect(rows[1].count >= 3)
+    }
+
+    @Test("Parse item with tag in parentheses")
+    func parseTagFromItem() {
+        let item = "Phone (Bills)"
+        let tagEnd = item.lastIndex(of: ")")!
+        let tagStart = item.lastIndex(of: "(" )!
+        let tag = String(item[item.index(after: tagStart)..<tagEnd])
+        #expect(tag == "Bills")
+    }
+
+    @Test("Skip rows with too few columns")
+    func skipShortRows() {
+        let csv = "Date,Item,Price\n4/1/2026,Coffee"
+        let (rows, _) = CSVImporter.parse(content: csv)
+        #expect(rows.count == 2)
+        #expect(rows[1].count == 2)
+    }
+
+    @Test("Empty CSV returns header only")
+    func emptyCSV() {
+        let csv = "Date,Item,Price"
+        let (rows, _) = CSVImporter.parse(content: csv)
+        #expect(rows.count == 1)
+    }
+
+    @Test("Handles CRLF line endings")
+    func handleCRLF() {
+        var csv = "Date,Item,Price"
+        csv.append("\r\n")
+        csv.append("4/1/2026,Coffee,3.75")
+        let (rows, _) = CSVImporter.parse(content: csv)
+        #expect(rows.count == 2)
+        #expect(rows[1][1] == "Coffee")
+    }
+}

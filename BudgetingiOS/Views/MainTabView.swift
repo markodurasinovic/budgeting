@@ -3,6 +3,8 @@ import SwiftData
 import BudgetingKit
 
 struct MainTabView: View {
+    @State private var showingImport = false
+
     var body: some View {
         TabView {
             MonthlyOverviewView()
@@ -19,6 +21,18 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Tags", systemImage: "tag")
                 }
+        }
+        .sheet(isPresented: $showingImport) {
+            CSVImportView()
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingImport = true
+                } label: {
+                    Label("Import CSV", systemImage: "doc.text")
+                }
+            }
         }
     }
 }
