@@ -8,67 +8,34 @@
 
 /* Begin PBXBuildFile section */
 		071444FEC453B8EF967FA9AA /* BudgetingKit in Frameworks */ = {isa = PBXBuildFile; productRef = 69EC1C6B98EC98DCEA14361B /* BudgetingKit */; };
-		1528CE2F0F3DF7D797DEDED0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BEE419B301D23E51BC2D9B51 /* Assets.xcassets */; };
 		187574CC891A561D7D53F46C /* BudgetingMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3911D631FF0617E2A0F711 /* BudgetingMacApp.swift */; };
-		1BEE098ED2D4738448767A31 /* MonthPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C78FDA14971D3E15A3F6AA /* MonthPicker.swift */; };
 		2349019BF055D7E625C8606D /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD03CB9002058DA0807FD145 /* SidebarView.swift */; };
-		32113B5022A8B44EC7777278 /* BudgetingiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10C57F89BB6011557713A595 /* BudgetingiOSApp.swift */; };
 		35CF7710C055C9C717CD1D20 /* MacPortfolioEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */; };
-		3641154CDC2C93CDBA2D9C84 /* EntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30AD0049EAC48457D060E66 /* EntryRowView.swift */; };
-		367267C00D711EB00C5808CB /* EntryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0C9A8CCF8F9FE06CB008D5 /* EntryListView.swift */; };
-		37F30D212CD996176AB5EC85 /* CategoryBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E83C4A387687AB01683390 /* CategoryBreakdownView.swift */; };
 		42663F39A41BD165DCF6C13A /* MacPortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */; };
-		45FAD613BB8CBE0DDC40C013 /* PortfolioEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204A34CF33D2C805F48C64B6 /* PortfolioEditView.swift */; };
-		56007D75F0FEA49701455EFE /* CSVImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD6F6CCCE78B2A678A78EE2 /* CSVImportView.swift */; };
-		57F1AA54CFEA387F725CE6DE /* TagDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E6905B6AA8999C5FA70AB8 /* TagDetailView.swift */; };
-		5FD8AB8011CDBBCDF214BA7B /* PortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D178E970D15E667EB39A21 /* PortfolioView.swift */; };
-		6846B9A5299969A5E03CBB62 /* BudgetEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FB171C1DEBA1313B286E6E /* BudgetEditView.swift */; };
-		872E36406403D8035719D615 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14061C6E91B527FA90636BD4 /* MainTabView.swift */; };
-		97804C8D030C820ADF93D9BC /* TagSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5637267A16CEC9619DF7FF61 /* TagSummaryView.swift */; };
 		B4B448EFFF0D6E561265A737 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2460562699D846F50E836A3B /* Assets.xcassets */; };
 		B7E078164B70690DFBB39D90 /* MacAddEditEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF08DE6C1F126EE560279D0 /* MacAddEditEntryView.swift */; };
 		C273AC21D9ED804922CE8E1D /* MacCSVImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */; };
-		C500B1E598C5724E1E00D533 /* AddEditEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E56B2FB4B3A287043D6868B /* AddEditEntryView.swift */; };
 		CA3BBA244D9282EF6779C3CA /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B1155C313FB35EF79EB0518 /* DetailView.swift */; };
 		D3BB25CE70C9D101BAA91AA6 /* MainContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24E16DF2D63BBF523143EE /* MainContentView.swift */; };
-		DE5DF0D910892B46479BE0BD /* MonthlyOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 228C4762258F592C0F82652B /* MonthlyOverviewView.swift */; };
 		E9E6C44DF1803FCC58BD4C1C /* MacCategoryBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F58617A3D68874CE190BC897 /* MacCategoryBreakdownView.swift */; };
 		EF00609925AF1803455C9D2B /* MacBudgetEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */; };
-		F910C943BE406F38C1E01D16 /* BudgetingKit in Frameworks */ = {isa = PBXBuildFile; productRef = A3090208A872B616DC68AFE1 /* BudgetingKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		10C57F89BB6011557713A595 /* BudgetingiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetingiOSApp.swift; sourceTree = "<group>"; };
-		14061C6E91B527FA90636BD4 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-		14E83C4A387687AB01683390 /* CategoryBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBreakdownView.swift; sourceTree = "<group>"; };
-		15E6905B6AA8999C5FA70AB8 /* TagDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagDetailView.swift; sourceTree = "<group>"; };
-		204A34CF33D2C805F48C64B6 /* PortfolioEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioEditView.swift; sourceTree = "<group>"; };
-		228C4762258F592C0F82652B /* MonthlyOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyOverviewView.swift; sourceTree = "<group>"; };
-		22D178E970D15E667EB39A21 /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
 		2460562699D846F50E836A3B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		27A7931F98791FECC15A7007 /* BudgetingKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = BudgetingKit; path = BudgetingKit; sourceTree = SOURCE_ROOT; };
 		2B1155C313FB35EF79EB0518 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
-		2E56B2FB4B3A287043D6868B /* AddEditEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditEntryView.swift; sourceTree = "<group>"; };
-		53770AA7765DE7AE3D3E4CCB /* BudgetingiOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BudgetingiOS.entitlements; sourceTree = "<group>"; };
 		5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPortfolioEditView.swift; sourceTree = "<group>"; };
-		5637267A16CEC9619DF7FF61 /* TagSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagSummaryView.swift; sourceTree = "<group>"; };
-		72C78FDA14971D3E15A3F6AA /* MonthPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthPicker.swift; sourceTree = "<group>"; };
 		8D24E16DF2D63BBF523143EE /* MainContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainContentView.swift; sourceTree = "<group>"; };
 		9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPortfolioView.swift; sourceTree = "<group>"; };
-		ABD6F6CCCE78B2A678A78EE2 /* CSVImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVImportView.swift; sourceTree = "<group>"; };
 		B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacBudgetEditView.swift; sourceTree = "<group>"; };
-		BEA1948D7E6100E0B871A266 /* BudgetingiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BudgetingiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BEE419B301D23E51BC2D9B51 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCSVImportView.swift; sourceTree = "<group>"; };
-		D30AD0049EAC48457D060E66 /* EntryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryRowView.swift; sourceTree = "<group>"; };
 		DB7917EAE710448A687379AB /* BudgetingMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BudgetingMac.entitlements; sourceTree = "<group>"; };
 		DBBF15C614400F603C70DDAB /* BudgetingMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BudgetingMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBF08DE6C1F126EE560279D0 /* MacAddEditEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAddEditEntryView.swift; sourceTree = "<group>"; };
 		DD03CB9002058DA0807FD145 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		EA3911D631FF0617E2A0F711 /* BudgetingMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetingMacApp.swift; sourceTree = "<group>"; };
-		F4FB171C1DEBA1313B286E6E /* BudgetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetEditView.swift; sourceTree = "<group>"; };
 		F58617A3D68874CE190BC897 /* MacCategoryBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCategoryBreakdownView.swift; sourceTree = "<group>"; };
-		FA0C9A8CCF8F9FE06CB008D5 /* EntryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,14 +44,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				071444FEC453B8EF967FA9AA /* BudgetingKit in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		3CB72701715D7B63D3EE8171 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				F910C943BE406F38C1E01D16 /* BudgetingKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,17 +66,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		53FC1DDBA9C901AB61D3D264 /* BudgetingiOS */ = {
-			isa = PBXGroup;
-			children = (
-				BEE419B301D23E51BC2D9B51 /* Assets.xcassets */,
-				53770AA7765DE7AE3D3E4CCB /* BudgetingiOS.entitlements */,
-				10C57F89BB6011557713A595 /* BudgetingiOSApp.swift */,
-				8B10C4E39D9937FED2953CF5 /* Views */,
-			);
-			path = BudgetingiOS;
-			sourceTree = "<group>";
-		};
 		738E4785DA0A301259C653C9 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -129,36 +77,14 @@
 		7DDAE0F569B743F18A521001 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				BEA1948D7E6100E0B871A266 /* BudgetingiOS.app */,
 				DBBF15C614400F603C70DDAB /* BudgetingMac.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8B10C4E39D9937FED2953CF5 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				2E56B2FB4B3A287043D6868B /* AddEditEntryView.swift */,
-				F4FB171C1DEBA1313B286E6E /* BudgetEditView.swift */,
-				14E83C4A387687AB01683390 /* CategoryBreakdownView.swift */,
-				ABD6F6CCCE78B2A678A78EE2 /* CSVImportView.swift */,
-				FA0C9A8CCF8F9FE06CB008D5 /* EntryListView.swift */,
-				D30AD0049EAC48457D060E66 /* EntryRowView.swift */,
-				14061C6E91B527FA90636BD4 /* MainTabView.swift */,
-				228C4762258F592C0F82652B /* MonthlyOverviewView.swift */,
-				72C78FDA14971D3E15A3F6AA /* MonthPicker.swift */,
-				204A34CF33D2C805F48C64B6 /* PortfolioEditView.swift */,
-				22D178E970D15E667EB39A21 /* PortfolioView.swift */,
-				15E6905B6AA8999C5FA70AB8 /* TagDetailView.swift */,
-				5637267A16CEC9619DF7FF61 /* TagSummaryView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
 		A29F925A7E7C2147DD3275CA = {
 			isa = PBXGroup;
 			children = (
-				53FC1DDBA9C901AB61D3D264 /* BudgetingiOS */,
 				C55795A145799802DDB58DD1 /* BudgetingMac */,
 				738E4785DA0A301259C653C9 /* Packages */,
 				7DDAE0F569B743F18A521001 /* Products */,
@@ -179,26 +105,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		562A292C17F4BF0A13674C19 /* BudgetingiOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D2BAD2B2181D9914C4014D63 /* Build configuration list for PBXNativeTarget "BudgetingiOS" */;
-			buildPhases = (
-				045668D3B6AF81D1FE2EC967 /* Sources */,
-				EBBFA2B485E9E61016AE3E32 /* Resources */,
-				3CB72701715D7B63D3EE8171 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = BudgetingiOS;
-			packageProductDependencies = (
-				A3090208A872B616DC68AFE1 /* BudgetingKit */,
-			);
-			productName = BudgetingiOS;
-			productReference = BEA1948D7E6100E0B871A266 /* BudgetingiOS.app */;
-			productType = "com.apple.product-type.application";
-		};
 		A467A1BFA48C5E700037F799 /* BudgetingMac */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 88C56E598387B75834008FED /* Build configuration list for PBXNativeTarget "BudgetingMac" */;
@@ -228,6 +134,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					A467A1BFA48C5E700037F799 = {
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 471A7650F4A6FF68E1F7F569 /* Build configuration list for PBXProject "Budgeting" */;
@@ -248,7 +157,6 @@
 			projectRoot = "";
 			targets = (
 				A467A1BFA48C5E700037F799 /* BudgetingMac */,
-				562A292C17F4BF0A13674C19 /* BudgetingiOS */,
 			);
 		};
 /* End PBXProject section */
@@ -262,38 +170,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EBBFA2B485E9E61016AE3E32 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				1528CE2F0F3DF7D797DEDED0 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		045668D3B6AF81D1FE2EC967 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C500B1E598C5724E1E00D533 /* AddEditEntryView.swift in Sources */,
-				6846B9A5299969A5E03CBB62 /* BudgetEditView.swift in Sources */,
-				32113B5022A8B44EC7777278 /* BudgetingiOSApp.swift in Sources */,
-				56007D75F0FEA49701455EFE /* CSVImportView.swift in Sources */,
-				37F30D212CD996176AB5EC85 /* CategoryBreakdownView.swift in Sources */,
-				367267C00D711EB00C5808CB /* EntryListView.swift in Sources */,
-				3641154CDC2C93CDBA2D9C84 /* EntryRowView.swift in Sources */,
-				872E36406403D8035719D615 /* MainTabView.swift in Sources */,
-				1BEE098ED2D4738448767A31 /* MonthPicker.swift in Sources */,
-				DE5DF0D910892B46479BE0BD /* MonthlyOverviewView.swift in Sources */,
-				45FAD613BB8CBE0DDC40C013 /* PortfolioEditView.swift in Sources */,
-				5FD8AB8011CDBBCDF214BA7B /* PortfolioView.swift in Sources */,
-				57F1AA54CFEA387F725CE6DE /* TagDetailView.swift in Sources */,
-				97804C8D030C820ADF93D9BC /* TagSummaryView.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FF537831D5B25D9A5407B49D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -359,43 +238,16 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
-		};
-		23DA256D35BD8ADD2B653219 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
-				CODE_SIGN_ENTITLEMENTS = BudgetingiOS/BudgetingiOS.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markodurasinovic.Budgeting.iOS;
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
 		};
 		8CD2F3A379D4F888A2DFC3CC /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -404,6 +256,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = BudgetingMac/BudgetingMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -416,33 +269,6 @@
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-			};
-			name = Release;
-		};
-		A41BF50AF48BBD804941CD84 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
-				CODE_SIGN_ENTITLEMENTS = BudgetingiOS/BudgetingiOS.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markodurasinovic.Budgeting.iOS;
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -497,12 +323,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -516,6 +342,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = BudgetingMac/BudgetingMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -552,15 +379,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		D2BAD2B2181D9914C4014D63 /* Build configuration list for PBXNativeTarget "BudgetingiOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				23DA256D35BD8ADD2B653219 /* Debug */,
-				A41BF50AF48BBD804941CD84 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -572,10 +390,6 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		69EC1C6B98EC98DCEA14361B /* BudgetingKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = BudgetingKit;
-		};
-		A3090208A872B616DC68AFE1 /* BudgetingKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = BudgetingKit;
 		};
