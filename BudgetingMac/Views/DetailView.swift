@@ -67,6 +67,14 @@ struct DetailView: View {
         return BudgetStore.runningTotalSavings(budgets: pastBudgets, expensesByMonth: monthExpenses)
     }
 
+    private var previousRunningTotal: Decimal {
+        let prevBudgets = budgets.filter { $0.year < year || ($0.year == year && $0.month < month) }
+        let monthExpenses = prevBudgets.map { b in
+            (month: b.month, year: b.year, total: BudgetStore.totalForMonth(entries, month: b.month, year: b.year))
+        }
+        return BudgetStore.runningTotalSavings(budgets: prevBudgets, expensesByMonth: monthExpenses)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             headerBar
@@ -164,6 +172,10 @@ struct DetailView: View {
                 Text(MoneyHelper.format(runningTotal))
                     .font(.body)
                     .fontWeight(.semibold)
+                let delta = runningTotal - previousRunningTotal
+                Text("\(delta >= 0 ? "+" : "")\(MoneyHelper.format(delta))")
+                    .font(.caption)
+                    .foregroundStyle(delta >= 0 ? .green : .red)
             }
         }
         .padding(.horizontal)
