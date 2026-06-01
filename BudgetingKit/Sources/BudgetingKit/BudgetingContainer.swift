@@ -3,7 +3,7 @@ import SwiftData
 
 public enum BudgetingContainer {
     public static func makeModelContainer() -> ModelContainer {
-        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self])
+        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self, PortfolioSnapshot.self, DebtSnapshot.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .none, cloudKitDatabase: .none)
 
         do {
@@ -24,7 +24,7 @@ public enum BudgetingContainer {
 
     @MainActor
     public static func makePreviewContainer() -> ModelContainer {
-        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self])
+        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self, PortfolioSnapshot.self, DebtSnapshot.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try! ModelContainer(for: schema, configurations: [config])
 
