@@ -26,6 +26,11 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Categories", systemImage: "chart.bar.fill")
                 }
+
+            PortfolioView()
+                .tabItem {
+                    Label("Portfolio", systemImage: "chart.line.uptrend.xyaxis")
+                }
         }
         .sheet(isPresented: $showingImport) {
             CSVImportView()

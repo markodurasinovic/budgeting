@@ -52,6 +52,8 @@ struct SidebarView: View {
                     .tag("___ALL___" as String)
                 Label("Categories", systemImage: "chart.bar.fill")
                     .tag("___CATEGORIES___" as String)
+                Label("Portfolio", systemImage: "chart.line.uptrend.xyaxis")
+                    .tag("___PORTFOLIO___" as String)
             }
 
             Section("Months") {
