@@ -20,12 +20,29 @@ struct SidebarView: View {
         selectedMonth.formatted(.dateTime.year().month(.wide))
     }
 
+    private var month: Int {
+        Calendar.current.component(.month, from: selectedMonth)
+    }
+
+    private var year: Int {
+        Calendar.current.component(.year, from: selectedMonth)
+    }
+
+    private var monthEntries: [Entry] {
+        BudgetStore.entriesForMonth(entries, month: month, year: year)
+    }
+
     private var entryCountForTag: [String: Int] {
         var counts: [String: Int] = [:]
-        for entry in entries {
+        for entry in monthEntries {
             counts[entry.tag, default: 0] += 1
         }
         return counts
+    }
+
+    private var tagsInMonth: [String] {
+        let tagSet = Set(monthEntries.map(\.tag))
+        return tags.filter { tagSet.contains($0.name) }.map(\.name).sorted()
     }
 
     var body: some View {
@@ -71,21 +88,21 @@ struct SidebarView: View {
                 }
             }
 
-            if !tags.isEmpty {
+            if !tagsInMonth.isEmpty {
                 Section("Tags") {
-                    ForEach(tags, id: \.name) { tag in
-                        let count = entryCountForTag[tag.name, default: 0]
+                    ForEach(tagsInMonth, id: \.self) { tagName in
+                        let count = entryCountForTag[tagName, default: 0]
                         HStack {
                             Circle()
-                                .fill(Color.hex(tag.name, from: tag.colorHex.isEmpty ? nil : tag.colorHex))
+                                .fill(Color.hex(tagName, from: BudgetStore.tagColorHex(tags, for: tagName)))
                                 .frame(width: 10, height: 10)
-                            Text(tag.name)
+                            Text(tagName)
                             Spacer()
                             Text("\(count)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        .tag(tag.name as String)
+                        .tag(tagName as String)
                     }
                 }
             }
