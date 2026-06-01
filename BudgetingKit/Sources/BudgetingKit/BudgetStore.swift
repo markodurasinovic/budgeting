@@ -37,6 +37,23 @@ public enum BudgetStore {
         }
     }
 
+    private static let tagPalette: [String] = [
+        "#007AFF", "#FF9500", "#34C759", "#AF52DE", "#FF2D55",
+        "#5AC8FA", "#5856D6", "#FFD60A", "#00C7BE", "#32ADE6",
+        "#FF6482", "#44D9E6", "#6C63FF", "#FF6B35", "#B8E6B8",
+        "#E6B8B8", "#B8B8E6", "#E6D8B8", "#D8B8E6", "#B8E6D8",
+    ]
+
+    private static func unusedColor(from existingTags: [Tag]) -> String {
+        let used = Set(existingTags.map { $0.colorHex }.filter { !$0.isEmpty })
+        for color in tagPalette {
+            if !used.contains(color) {
+                return color
+            }
+        }
+        return tagPalette[tagPalette.count % tagPalette.count]
+    }
+
     private static func resolveTag(_ rawName: String, context: ModelContext) -> String {
         let trimmed = rawName.trimmingCharacters(in: .whitespaces)
         let canonical = trimmed.capitalized
@@ -50,9 +67,13 @@ public enum BudgetStore {
                 }
                 return canonical
             }
+
+            let tag = Tag(name: canonical, colorHex: unusedColor(from: existingTags))
+            context.insert(tag)
+            return canonical
         }
 
-        let tag = Tag(name: canonical)
+        let tag = Tag(name: canonical, colorHex: tagPalette[0])
         context.insert(tag)
         return canonical
     }
