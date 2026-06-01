@@ -21,6 +21,11 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Tags", systemImage: "tag")
                 }
+
+            CategoryBreakdownView()
+                .tabItem {
+                    Label("Categories", systemImage: "chart.bar.fill")
+                }
         }
         .sheet(isPresented: $showingImport) {
             CSVImportView()

@@ -50,6 +50,8 @@ struct SidebarView: View {
             Section("Filter") {
                 Label("All Entries", systemImage: "list.bullet")
                     .tag("___ALL___" as String)
+                Label("Categories", systemImage: "chart.bar.fill")
+                    .tag("___CATEGORIES___" as String)
             }
 
             Section("Months") {

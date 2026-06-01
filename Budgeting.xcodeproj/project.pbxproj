@@ -15,6 +15,7 @@
 		32113B5022A8B44EC7777278 /* BudgetingiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10C57F89BB6011557713A595 /* BudgetingiOSApp.swift */; };
 		3641154CDC2C93CDBA2D9C84 /* EntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30AD0049EAC48457D060E66 /* EntryRowView.swift */; };
 		367267C00D711EB00C5808CB /* EntryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0C9A8CCF8F9FE06CB008D5 /* EntryListView.swift */; };
+		37F30D212CD996176AB5EC85 /* CategoryBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E83C4A387687AB01683390 /* CategoryBreakdownView.swift */; };
 		56007D75F0FEA49701455EFE /* CSVImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD6F6CCCE78B2A678A78EE2 /* CSVImportView.swift */; };
 		57F1AA54CFEA387F725CE6DE /* TagDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E6905B6AA8999C5FA70AB8 /* TagDetailView.swift */; };
 		6846B9A5299969A5E03CBB62 /* BudgetEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FB171C1DEBA1313B286E6E /* BudgetEditView.swift */; };
@@ -27,6 +28,7 @@
 		CA3BBA244D9282EF6779C3CA /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B1155C313FB35EF79EB0518 /* DetailView.swift */; };
 		D3BB25CE70C9D101BAA91AA6 /* MainContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24E16DF2D63BBF523143EE /* MainContentView.swift */; };
 		DE5DF0D910892B46479BE0BD /* MonthlyOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 228C4762258F592C0F82652B /* MonthlyOverviewView.swift */; };
+		E9E6C44DF1803FCC58BD4C1C /* MacCategoryBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F58617A3D68874CE190BC897 /* MacCategoryBreakdownView.swift */; };
 		EF00609925AF1803455C9D2B /* MacBudgetEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */; };
 		F910C943BE406F38C1E01D16 /* BudgetingKit in Frameworks */ = {isa = PBXBuildFile; productRef = A3090208A872B616DC68AFE1 /* BudgetingKit */; };
 /* End PBXBuildFile section */
@@ -34,6 +36,7 @@
 /* Begin PBXFileReference section */
 		10C57F89BB6011557713A595 /* BudgetingiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetingiOSApp.swift; sourceTree = "<group>"; };
 		14061C6E91B527FA90636BD4 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		14E83C4A387687AB01683390 /* CategoryBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBreakdownView.swift; sourceTree = "<group>"; };
 		15E6905B6AA8999C5FA70AB8 /* TagDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagDetailView.swift; sourceTree = "<group>"; };
 		228C4762258F592C0F82652B /* MonthlyOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyOverviewView.swift; sourceTree = "<group>"; };
 		2460562699D846F50E836A3B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -56,6 +59,7 @@
 		DD03CB9002058DA0807FD145 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		EA3911D631FF0617E2A0F711 /* BudgetingMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetingMacApp.swift; sourceTree = "<group>"; };
 		F4FB171C1DEBA1313B286E6E /* BudgetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetEditView.swift; sourceTree = "<group>"; };
+		F58617A3D68874CE190BC897 /* MacCategoryBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCategoryBreakdownView.swift; sourceTree = "<group>"; };
 		FA0C9A8CCF8F9FE06CB008D5 /* EntryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -85,6 +89,7 @@
 				2B1155C313FB35EF79EB0518 /* DetailView.swift */,
 				DBF08DE6C1F126EE560279D0 /* MacAddEditEntryView.swift */,
 				B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */,
+				F58617A3D68874CE190BC897 /* MacCategoryBreakdownView.swift */,
 				D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */,
 				8D24E16DF2D63BBF523143EE /* MainContentView.swift */,
 				DD03CB9002058DA0807FD145 /* SidebarView.swift */,
@@ -125,6 +130,7 @@
 			children = (
 				2E56B2FB4B3A287043D6868B /* AddEditEntryView.swift */,
 				F4FB171C1DEBA1313B286E6E /* BudgetEditView.swift */,
+				14E83C4A387687AB01683390 /* CategoryBreakdownView.swift */,
 				ABD6F6CCCE78B2A678A78EE2 /* CSVImportView.swift */,
 				FA0C9A8CCF8F9FE06CB008D5 /* EntryListView.swift */,
 				D30AD0049EAC48457D060E66 /* EntryRowView.swift */,
@@ -263,6 +269,7 @@
 				6846B9A5299969A5E03CBB62 /* BudgetEditView.swift in Sources */,
 				32113B5022A8B44EC7777278 /* BudgetingiOSApp.swift in Sources */,
 				56007D75F0FEA49701455EFE /* CSVImportView.swift in Sources */,
+				37F30D212CD996176AB5EC85 /* CategoryBreakdownView.swift in Sources */,
 				367267C00D711EB00C5808CB /* EntryListView.swift in Sources */,
 				3641154CDC2C93CDBA2D9C84 /* EntryRowView.swift in Sources */,
 				872E36406403D8035719D615 /* MainTabView.swift in Sources */,
@@ -282,6 +289,7 @@
 				B7E078164B70690DFBB39D90 /* MacAddEditEntryView.swift in Sources */,
 				EF00609925AF1803455C9D2B /* MacBudgetEditView.swift in Sources */,
 				C273AC21D9ED804922CE8E1D /* MacCSVImportView.swift in Sources */,
+				E9E6C44DF1803FCC58BD4C1C /* MacCategoryBreakdownView.swift in Sources */,
 				D3BB25CE70C9D101BAA91AA6 /* MainContentView.swift in Sources */,
 				2349019BF055D7E625C8606D /* SidebarView.swift in Sources */,
 			);

@@ -16,15 +16,22 @@ struct MainContentView: View {
                 selectedTag: $selectedTag
             )
         } detail: {
-            DetailView(
-                month: Calendar.current.component(.month, from: selectedMonth),
-                year: Calendar.current.component(.year, from: selectedMonth),
-                selectedTag: selectedTag,
-                onAddEntry: { showingAddSheet = true },
-                onEditEntry: { entry in
-                    entryToEdit = entry
-                }
-            )
+            if selectedTag == "___CATEGORIES___" {
+                MacCategoryBreakdownView(
+                    month: Calendar.current.component(.month, from: selectedMonth),
+                    year: Calendar.current.component(.year, from: selectedMonth)
+                )
+            } else {
+                DetailView(
+                    month: Calendar.current.component(.month, from: selectedMonth),
+                    year: Calendar.current.component(.year, from: selectedMonth),
+                    selectedTag: selectedTag,
+                    onAddEntry: { showingAddSheet = true },
+                    onEditEntry: { entry in
+                        entryToEdit = entry
+                    }
+                )
+            }
         }
         .sheet(isPresented: $showingAddSheet) {
             MacAddEditEntryView(mode: .add)
