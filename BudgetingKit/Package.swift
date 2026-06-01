@@ -13,9 +13,13 @@ let package = Package(
             targets: ["BudgetingKit"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/CoreOffice/CoreXLSX.git", from: "0.14.2")
+    ],
     targets: [
         .target(
             name: "BudgetingKit",
+            dependencies: ["CoreXLSX"],
             path: "Sources"
         ),
         .testTarget(

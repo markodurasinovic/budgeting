@@ -3,6 +3,8 @@ import SwiftData
 import BudgetingKit
 
 struct SidebarView: View {
+    @Environment(\.modelContext) private var modelContext
+
     @Query(sort: [SortDescriptor(\Entry.date, order: .reverse)])
     private var entries: [Entry]
 
@@ -11,6 +13,8 @@ struct SidebarView: View {
 
     @Binding var selectedMonth: Date
     @Binding var selectedTag: String?
+
+    @State private var showingClearAlert = false
 
     private var monthName: String {
         selectedMonth.formatted(.dateTime.year().month(.wide))
@@ -85,9 +89,41 @@ struct SidebarView: View {
                     }
                 }
             }
+
+            Section {
+                Button("Clear All Data", role: .destructive) {
+                    showingClearAlert = true
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.red)
+                .alert("Clear All Data?", isPresented: $showingClearAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Clear", role: .destructive) {
+                        performClear()
+                    }
+                } message: {
+                    Text("This will delete all entries, tags, and budgets. This cannot be undone.")
+                }
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle("Budgeting")
+    }
+
+    private func performClear() {
+        let entryDescriptor = FetchDescriptor<Entry>()
+        let tagDescriptor = FetchDescriptor<Tag>()
+        let budgetDescriptor = FetchDescriptor<MonthlyBudget>()
+
+        if let entries = try? modelContext.fetch(entryDescriptor) {
+            for e in entries { modelContext.delete(e) }
+        }
+        if let tags = try? modelContext.fetch(tagDescriptor) {
+            for t in tags { modelContext.delete(t) }
+        }
+        if let budgets = try? modelContext.fetch(budgetDescriptor) {
+            for b in budgets { modelContext.delete(b) }
+        }
     }
 }
 

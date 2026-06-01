@@ -3,14 +3,28 @@ import SwiftData
 
 public enum BudgetingContainer {
     public static func makeModelContainer() -> ModelContainer {
-        let schema = Schema([Entry.self, Tag.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        return try! ModelContainer(for: schema, configurations: [config])
+        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .none, cloudKitDatabase: .none)
+
+        do {
+            return try ModelContainer(for: schema, configurations: [config])
+        } catch {
+            let url = config.url
+            let dbUrls = [
+                url,
+                url.deletingPathExtension().appendingPathExtension("sqlite-wal"),
+                url.deletingPathExtension().appendingPathExtension("sqlite-shm")
+            ]
+            for dbUrl in dbUrls {
+                try? FileManager.default.removeItem(at: dbUrl)
+            }
+            return try! ModelContainer(for: schema, configurations: [config])
+        }
     }
 
     @MainActor
     public static func makePreviewContainer() -> ModelContainer {
-        let schema = Schema([Entry.self, Tag.self])
+        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try! ModelContainer(for: schema, configurations: [config])
 
@@ -27,6 +41,12 @@ public enum BudgetingContainer {
         context.insert(Entry(date: now, item: "Monthly rent", tag: "Rent", amount: Decimal(string: "1250")!))
         context.insert(Entry(date: now, item: "Paycheck", tag: "Salary", amount: Decimal(string: "3500")!))
         context.insert(Entry(date: now.addingTimeInterval(-86400), item: "Coffee", tag: "Food", amount: Decimal(string: "3.75")!))
+
+        let calendar = Calendar.current
+        let month = calendar.component(.month, from: now)
+        let year = calendar.component(.year, from: now)
+        let budget = MonthlyBudget(month: month, year: year, income: Decimal(string: "3500")!, savings: Decimal(string: "500")!, investment: Decimal(string: "200")!)
+        context.insert(budget)
 
         return container
     }

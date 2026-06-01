@@ -74,8 +74,13 @@ struct EntryListView: View {
             .sheet(isPresented: $showingAddSheet) {
                 AddEditEntryView(mode: .add)
             }
-            .sheet(item: $entryToEdit) { entry in
-                AddEditEntryView(mode: .edit(entry))
+            .sheet(isPresented: Binding(
+                get: { entryToEdit != nil },
+                set: { if !$0 { entryToEdit = nil } }
+            )) {
+                if let entry = entryToEdit {
+                    AddEditEntryView(mode: .edit(entry))
+                }
             }
         }
     }
