@@ -45,10 +45,11 @@ struct MonthlyOverviewView: View {
     }
 
     private var runningTotal: Decimal {
-        let monthExpenses = budgets.map { b in
+        let pastBudgets = budgets.filter { $0.year < year || ($0.year == year && $0.month <= month) }
+        let monthExpenses = pastBudgets.map { b in
             (month: b.month, year: b.year, total: BudgetStore.totalForMonth(entries, month: b.month, year: b.year))
         }
-        return BudgetStore.runningTotalSavings(budgets: budgets, expensesByMonth: monthExpenses)
+        return BudgetStore.runningTotalSavings(budgets: pastBudgets, expensesByMonth: monthExpenses)
     }
 
     var body: some View {

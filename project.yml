@@ -19,8 +19,6 @@ targets:
       - path: BudgetingiOS
     dependencies:
       - package: BudgetingKit
-    entitlements:
-      path: BudgetingiOS/BudgetingiOS.entitlements
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.markodurasinovic.Budgeting.iOS
@@ -28,6 +26,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_EMIT_LOC_STRINGS: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -37,10 +37,8 @@ targets:
       configs:
         Debug:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
-          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
-          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
 
   BudgetingMac:
     type: application
@@ -58,12 +56,12 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_EMIT_LOC_STRINGS: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
       configs:
         Debug:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
-          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
-          CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
