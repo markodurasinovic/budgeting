@@ -15,7 +15,6 @@ struct MonthlyOverviewView: View {
 
     @State private var selectedMonth = Date()
     @State private var showingBudgetEdit = false
-    @State private var showingClearAlert = false
 
     private var month: Int {
         Calendar.current.component(.month, from: selectedMonth)
@@ -165,50 +164,16 @@ struct MonthlyOverviewView: View {
                     MonthPicker(selection: $selectedMonth)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack {
-                        Button(role: .destructive) {
-                            clearAllData()
-                        } label: {
-                            Label("Clear", systemImage: "trash")
-                        }
-                        .alert("Clear All Data?", isPresented: $showingClearAlert) {
-                            Button("Cancel", role: .cancel) { }
-                            Button("Clear", role: .destructive) { performClear() }
-                        } message: {
-                            Text("This will delete all entries, tags, and budgets. This cannot be undone.")
-                        }
-
-                        Button {
-                            showingBudgetEdit = true
-                        } label: {
-                            Label("Budget", systemImage: "pencil")
-                        }
+                    Button {
+                        showingBudgetEdit = true
+                    } label: {
+                        Label("Budget", systemImage: "pencil")
                     }
                 }
             }
             .sheet(isPresented: $showingBudgetEdit) {
                 BudgetEditView(budget: currentBudget)
             }
-        }
-    }
-
-    private func clearAllData() {
-        showingClearAlert = true
-    }
-
-    private func performClear() {
-        let entryDescriptor = FetchDescriptor<Entry>()
-        let tagDescriptor = FetchDescriptor<Tag>()
-        let budgetDescriptor = FetchDescriptor<MonthlyBudget>()
-
-        if let entries = try? modelContext.fetch(entryDescriptor) {
-            for e in entries { modelContext.delete(e) }
-        }
-        if let tags = try? modelContext.fetch(tagDescriptor) {
-            for t in tags { modelContext.delete(t) }
-        }
-        if let budgets = try? modelContext.fetch(budgetDescriptor) {
-            for b in budgets { modelContext.delete(b) }
         }
     }
 }
