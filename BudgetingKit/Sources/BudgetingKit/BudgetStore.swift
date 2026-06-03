@@ -111,6 +111,52 @@ public enum BudgetStore {
         entriesForMonth(entries, month: month, year: year).reduce(Decimal(0)) { $0 + $1.amount }
     }
 
+    public static func totalsByDayForMonth(_ entries: [Entry], month: Int, year: Int) -> [(day: Int, total: Decimal)] {
+        let monthEntries = entriesForMonth(entries, month: month, year: year)
+        let calendar = Calendar.current
+        var totals: [Int: Decimal] = [:]
+        for entry in monthEntries {
+            let day = calendar.component(.day, from: entry.date)
+            totals[day, default: Decimal(0)] += entry.amount
+        }
+        return (1...daysInMonth(month: month, year: year)).map { day in
+            (day: day, total: totals[day] ?? Decimal(0))
+        }
+    }
+
+    public static func daysInMonth(month: Int, year: Int) -> Int {
+        let calendar = Calendar.current
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        guard let date = calendar.date(from: components),
+              let range = calendar.range(of: .day, in: .month, for: date) else { return 30 }
+        return range.count
+    }
+
+    public static func daysElapsedInMonth(month: Int, year: Int) -> Int {
+        let now = Date()
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: now)
+        let currentYear = calendar.component(.year, from: now)
+        if month == currentMonth && year == currentYear {
+            return calendar.component(.day, from: now)
+        }
+        return daysInMonth(month: month, year: year)
+    }
+
+    public static func averageDailySpend(_ entries: [Entry], month: Int, year: Int) -> Decimal {
+        let daysElapsed = daysElapsedInMonth(month: month, year: year)
+        guard daysElapsed > 0 else { return Decimal(0) }
+        let total = totalForMonth(entries, month: month, year: year)
+        return total / Decimal(daysElapsed)
+    }
+
+    public static func estimatedMonthlySpend(_ entries: [Entry], month: Int, year: Int) -> Decimal {
+        let avg = averageDailySpend(entries, month: month, year: year)
+        return avg * Decimal(daysInMonth(month: month, year: year))
+    }
+
     public static func totalsByTagForMonth(_ entries: [Entry], month: Int, year: Int) -> [(tag: String, total: Decimal)] {
         let monthEntries = entriesForMonth(entries, month: month, year: year)
         var totals: [String: Decimal] = [:]

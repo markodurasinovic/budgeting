@@ -50,6 +50,8 @@ struct SidebarView: View {
                     .tag("___CATEGORIES___" as String)
                 Label("Portfolio", systemImage: "chart.line.uptrend.xyaxis")
                     .tag("___PORTFOLIO___" as String)
+                Label("Daily Spend", systemImage: "calendar")
+                    .tag("___DAILY___" as String)
             }
 
             Section("Months") {

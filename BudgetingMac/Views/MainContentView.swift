@@ -26,6 +26,11 @@ struct MainContentView: View {
                     month: Calendar.current.component(.month, from: selectedMonth),
                     year: Calendar.current.component(.year, from: selectedMonth)
                 )
+            } else if selectedTag == "___DAILY___" {
+                MacDailySpendView(
+                    month: Calendar.current.component(.month, from: selectedMonth),
+                    year: Calendar.current.component(.year, from: selectedMonth)
+                )
             } else {
                 DetailView(
                     month: Calendar.current.component(.month, from: selectedMonth),
