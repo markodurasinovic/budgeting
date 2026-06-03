@@ -37,6 +37,28 @@ public enum BudgetStore {
         }
     }
 
+    private static let tagPalette: [String] = [
+        "#007AFF", "#FF9500", "#34C759", "#AF52DE", "#FF2D55",
+        "#5AC8FA", "#5856D6", "#FFD60A", "#00C7BE", "#32ADE6",
+        "#FF6482", "#44D9E6", "#6C63FF", "#FF6B35", "#B8E6B8",
+        "#E6B8B8", "#B8B8E6", "#E6D8B8", "#D8B8E6", "#B8E6D8",
+    ]
+
+    private static func unusedColor(from existingTags: [Tag]) -> String {
+        var used = Set(existingTags.map { $0.colorHex }.filter { !$0.isEmpty })
+        for tag in existingTags where tag.colorHex.isEmpty {
+            let hash = tag.name.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
+            let idx = abs(hash) % tagPalette.count
+            used.insert(tagPalette[idx])
+        }
+        for color in tagPalette {
+            if !used.contains(color) {
+                return color
+            }
+        }
+        return tagPalette[existingTags.count % tagPalette.count]
+    }
+
     private static func resolveTag(_ rawName: String, context: ModelContext) -> String {
         let trimmed = rawName.trimmingCharacters(in: .whitespaces)
         let canonical = trimmed.capitalized
@@ -50,9 +72,14 @@ public enum BudgetStore {
                 }
                 return canonical
             }
+
+            let tag = Tag(name: canonical, colorHex: unusedColor(from: existingTags))
+            context.insert(tag)
+            try? context.save()
+            return canonical
         }
 
-        let tag = Tag(name: canonical)
+        let tag = Tag(name: canonical, colorHex: tagPalette[0])
         context.insert(tag)
         return canonical
     }
@@ -84,6 +111,52 @@ public enum BudgetStore {
         entriesForMonth(entries, month: month, year: year).reduce(Decimal(0)) { $0 + $1.amount }
     }
 
+    public static func totalsByDayForMonth(_ entries: [Entry], month: Int, year: Int) -> [(day: Int, total: Decimal)] {
+        let monthEntries = entriesForMonth(entries, month: month, year: year)
+        let calendar = Calendar.current
+        var totals: [Int: Decimal] = [:]
+        for entry in monthEntries {
+            let day = calendar.component(.day, from: entry.date)
+            totals[day, default: Decimal(0)] += entry.amount
+        }
+        return (1...daysInMonth(month: month, year: year)).map { day in
+            (day: day, total: totals[day] ?? Decimal(0))
+        }
+    }
+
+    public static func daysInMonth(month: Int, year: Int) -> Int {
+        let calendar = Calendar.current
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        guard let date = calendar.date(from: components),
+              let range = calendar.range(of: .day, in: .month, for: date) else { return 30 }
+        return range.count
+    }
+
+    public static func daysElapsedInMonth(month: Int, year: Int) -> Int {
+        let now = Date()
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: now)
+        let currentYear = calendar.component(.year, from: now)
+        if month == currentMonth && year == currentYear {
+            return calendar.component(.day, from: now)
+        }
+        return daysInMonth(month: month, year: year)
+    }
+
+    public static func averageDailySpend(_ entries: [Entry], month: Int, year: Int) -> Decimal {
+        let daysElapsed = daysElapsedInMonth(month: month, year: year)
+        guard daysElapsed > 0 else { return Decimal(0) }
+        let total = totalForMonth(entries, month: month, year: year)
+        return total / Decimal(daysElapsed)
+    }
+
+    public static func estimatedMonthlySpend(_ entries: [Entry], month: Int, year: Int) -> Decimal {
+        let avg = averageDailySpend(entries, month: month, year: year)
+        return avg * Decimal(daysInMonth(month: month, year: year))
+    }
+
     public static func totalsByTagForMonth(_ entries: [Entry], month: Int, year: Int) -> [(tag: String, total: Decimal)] {
         let monthEntries = entriesForMonth(entries, month: month, year: year)
         var totals: [String: Decimal] = [:]
@@ -94,7 +167,21 @@ public enum BudgetStore {
     }
 
     public static func tagColorHex(_ tags: [Tag], for tagName: String) -> String? {
-        tags.first(where: { $0.name.lowercased() == tagName.lowercased() })?.colorHex
+        guard let tag = tags.first(where: { $0.name.lowercased() == tagName.lowercased() }) else { return nil }
+        if !tag.colorHex.isEmpty {
+            return tag.colorHex
+        }
+        var used = Set(tags.map { $0.colorHex }.filter { !$0.isEmpty })
+        for t in tags where t.colorHex.isEmpty && t.name != tag.name {
+            let h = t.name.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
+            used.insert(tagPalette[abs(h) % tagPalette.count])
+        }
+        for color in tagPalette {
+            if !used.contains(color) {
+                return color
+            }
+        }
+        return tagPalette[tags.count % tagPalette.count]
     }
 
     public static func searchEntries(_ entries: [Entry], query: String) -> [Entry] {
@@ -104,6 +191,38 @@ public enum BudgetStore {
             $0.item.lowercased().contains(lower) ||
             $0.tag.lowercased().contains(lower)
         }
+    }
+
+    public static func assignTagColors(in context: ModelContext) {
+        let descriptor = FetchDescriptor<Tag>()
+        guard let tags = try? context.fetch(descriptor), !tags.isEmpty else { return }
+
+        var used = Set<String>()
+        for tag in tags {
+            if tag.colorHex.isEmpty { continue }
+            if used.contains(tag.colorHex) {
+                tag.colorHex = ""
+            } else {
+                used.insert(tag.colorHex)
+            }
+        }
+
+        var unassigned = tags.filter { $0.colorHex.isEmpty }
+        for tag in unassigned {
+            for color in tagPalette {
+                if !used.contains(color) {
+                    tag.colorHex = color
+                    used.insert(color)
+                    break
+                }
+            }
+            if tag.colorHex.isEmpty {
+                let idx = used.count % tagPalette.count
+                tag.colorHex = tagPalette[idx]
+                used.insert(tagPalette[idx])
+            }
+        }
+        try? context.save()
     }
 
     // MARK: - Monthly Budget

@@ -39,7 +39,10 @@ public extension Color {
             .blue, .orange, .green, .purple, .pink,
             .teal, .indigo, .yellow, .mint, .cyan,
         ]
-        let hash = abs(name.hashValue)
-        return palette[hash % palette.count]
+        var hash = 0
+        for ch in name.utf8 {
+            hash = (hash &* 31) &+ Int(ch)
+        }
+        return palette[abs(hash) % palette.count]
     }
 }

@@ -10,6 +10,7 @@
 		071444FEC453B8EF967FA9AA /* BudgetingKit in Frameworks */ = {isa = PBXBuildFile; productRef = 69EC1C6B98EC98DCEA14361B /* BudgetingKit */; };
 		187574CC891A561D7D53F46C /* BudgetingMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3911D631FF0617E2A0F711 /* BudgetingMacApp.swift */; };
 		2349019BF055D7E625C8606D /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD03CB9002058DA0807FD145 /* SidebarView.swift */; };
+		281E84731A23F8E9B93D4EB8 /* MacDailySpendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 535FD80DE9E6985EF69A8B49 /* MacDailySpendView.swift */; };
 		35CF7710C055C9C717CD1D20 /* MacPortfolioEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */; };
 		42663F39A41BD165DCF6C13A /* MacPortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */; };
 		B4B448EFFF0D6E561265A737 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2460562699D846F50E836A3B /* Assets.xcassets */; };
@@ -25,6 +26,7 @@
 		2460562699D846F50E836A3B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		27A7931F98791FECC15A7007 /* BudgetingKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = BudgetingKit; path = BudgetingKit; sourceTree = SOURCE_ROOT; };
 		2B1155C313FB35EF79EB0518 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
+		535FD80DE9E6985EF69A8B49 /* MacDailySpendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDailySpendView.swift; sourceTree = "<group>"; };
 		5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPortfolioEditView.swift; sourceTree = "<group>"; };
 		8D24E16DF2D63BBF523143EE /* MainContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainContentView.swift; sourceTree = "<group>"; };
 		9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPortfolioView.swift; sourceTree = "<group>"; };
@@ -58,6 +60,7 @@
 				B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */,
 				F58617A3D68874CE190BC897 /* MacCategoryBreakdownView.swift */,
 				D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */,
+				535FD80DE9E6985EF69A8B49 /* MacDailySpendView.swift */,
 				5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */,
 				9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */,
 				8D24E16DF2D63BBF523143EE /* MainContentView.swift */,
@@ -183,6 +186,7 @@
 				EF00609925AF1803455C9D2B /* MacBudgetEditView.swift in Sources */,
 				C273AC21D9ED804922CE8E1D /* MacCSVImportView.swift in Sources */,
 				E9E6C44DF1803FCC58BD4C1C /* MacCategoryBreakdownView.swift in Sources */,
+				281E84731A23F8E9B93D4EB8 /* MacDailySpendView.swift in Sources */,
 				35CF7710C055C9C717CD1D20 /* MacPortfolioEditView.swift in Sources */,
 				42663F39A41BD165DCF6C13A /* MacPortfolioView.swift in Sources */,
 				D3BB25CE70C9D101BAA91AA6 /* MainContentView.swift in Sources */,
