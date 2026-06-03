@@ -2,12 +2,15 @@ import Foundation
 import SwiftData
 
 public enum BudgetingContainer {
+    @MainActor
     public static func makeModelContainer() -> ModelContainer {
         let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self, PortfolioSnapshot.self, DebtSnapshot.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .none, cloudKitDatabase: .none)
 
         do {
-            return try ModelContainer(for: schema, configurations: [config])
+            let container = try ModelContainer(for: schema, configurations: [config])
+            BudgetStore.assignTagColors(in: container.mainContext)
+            return container
         } catch {
             let url = config.url
             let dbUrls = [
@@ -18,7 +21,9 @@ public enum BudgetingContainer {
             for dbUrl in dbUrls {
                 try? FileManager.default.removeItem(at: dbUrl)
             }
-            return try! ModelContainer(for: schema, configurations: [config])
+            let container = try! ModelContainer(for: schema, configurations: [config])
+            BudgetStore.assignTagColors(in: container.mainContext)
+            return container
         }
     }
 

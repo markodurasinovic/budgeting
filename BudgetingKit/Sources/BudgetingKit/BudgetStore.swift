@@ -45,13 +45,18 @@ public enum BudgetStore {
     ]
 
     private static func unusedColor(from existingTags: [Tag]) -> String {
-        let used = Set(existingTags.map { $0.colorHex }.filter { !$0.isEmpty })
+        var used = Set(existingTags.map { $0.colorHex }.filter { !$0.isEmpty })
+        for tag in existingTags where tag.colorHex.isEmpty {
+            let hash = tag.name.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
+            let idx = abs(hash) % tagPalette.count
+            used.insert(tagPalette[idx])
+        }
         for color in tagPalette {
             if !used.contains(color) {
                 return color
             }
         }
-        return tagPalette[tagPalette.count % tagPalette.count]
+        return tagPalette[existingTags.count % tagPalette.count]
     }
 
     private static func resolveTag(_ rawName: String, context: ModelContext) -> String {
@@ -70,6 +75,7 @@ public enum BudgetStore {
 
             let tag = Tag(name: canonical, colorHex: unusedColor(from: existingTags))
             context.insert(tag)
+            try? context.save()
             return canonical
         }
 
@@ -115,7 +121,21 @@ public enum BudgetStore {
     }
 
     public static func tagColorHex(_ tags: [Tag], for tagName: String) -> String? {
-        tags.first(where: { $0.name.lowercased() == tagName.lowercased() })?.colorHex
+        guard let tag = tags.first(where: { $0.name.lowercased() == tagName.lowercased() }) else { return nil }
+        if !tag.colorHex.isEmpty {
+            return tag.colorHex
+        }
+        var used = Set(tags.map { $0.colorHex }.filter { !$0.isEmpty })
+        for t in tags where t.colorHex.isEmpty && t.name != tag.name {
+            let h = t.name.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
+            used.insert(tagPalette[abs(h) % tagPalette.count])
+        }
+        for color in tagPalette {
+            if !used.contains(color) {
+                return color
+            }
+        }
+        return tagPalette[tags.count % tagPalette.count]
     }
 
     public static func searchEntries(_ entries: [Entry], query: String) -> [Entry] {
@@ -125,6 +145,38 @@ public enum BudgetStore {
             $0.item.lowercased().contains(lower) ||
             $0.tag.lowercased().contains(lower)
         }
+    }
+
+    public static func assignTagColors(in context: ModelContext) {
+        let descriptor = FetchDescriptor<Tag>()
+        guard let tags = try? context.fetch(descriptor), !tags.isEmpty else { return }
+
+        var used = Set<String>()
+        for tag in tags {
+            if tag.colorHex.isEmpty { continue }
+            if used.contains(tag.colorHex) {
+                tag.colorHex = ""
+            } else {
+                used.insert(tag.colorHex)
+            }
+        }
+
+        var unassigned = tags.filter { $0.colorHex.isEmpty }
+        for tag in unassigned {
+            for color in tagPalette {
+                if !used.contains(color) {
+                    tag.colorHex = color
+                    used.insert(color)
+                    break
+                }
+            }
+            if tag.colorHex.isEmpty {
+                let idx = used.count % tagPalette.count
+                tag.colorHex = tagPalette[idx]
+                used.insert(tagPalette[idx])
+            }
+        }
+        try? context.save()
     }
 
     // MARK: - Monthly Budget
