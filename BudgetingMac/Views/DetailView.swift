@@ -16,12 +16,17 @@ struct DetailView: View {
     let month: Int
     let year: Int
     let selectedTag: String?
-    let onAddEntry: () -> Void
+    let onAddEntry: (Date?) -> Void
     let onEditEntry: (Entry) -> Void
 
     @State private var searchText = ""
     @State private var selectedEntries: Set<Entry.ID> = []
     @State private var showingBudgetEdit = false
+
+    private var selectedEntryDate: Date? {
+        guard let firstID = selectedEntries.first else { return nil }
+        return filteredEntries.first(where: { $0.id == firstID })?.date
+    }
 
     private var effectiveTag: String? {
         if let tag = selectedTag, tag != "___ALL___" { return tag }
@@ -53,6 +58,12 @@ struct DetailView: View {
 
     private var remainder: Decimal {
         BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
+    }
+
+    private var daysRemaining: Int {
+        let totalDays = BudgetStore.daysInMonth(month: month, year: year)
+        let elapsed = BudgetStore.daysElapsedInMonth(month: month, year: year)
+        return max(totalDays - elapsed, 0)
     }
 
     private var savingsRateValue: Decimal? {
@@ -112,7 +123,7 @@ struct DetailView: View {
             }
             .buttonStyle(.bordered)
             Button {
-                onAddEntry()
+                onAddEntry(selectedEntryDate)
             } label: {
                 Label("Add Entry", systemImage: "plus")
             }
@@ -151,6 +162,11 @@ struct DetailView: View {
                 Text(MoneyHelper.format(remainder))
                     .font(.body)
                     .foregroundStyle(remainder < 0 ? .red : .green)
+                if daysRemaining > 0 {
+                    Text("\(MoneyHelper.format(remainder / Decimal(daysRemaining))) / day")
+                        .font(.caption)
+                        .foregroundStyle(remainder < 0 ? .red : .green)
+                }
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text("Savings rate")
@@ -231,6 +247,12 @@ struct DetailView: View {
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))
         .contextMenu(forSelectionType: Entry.ID.self) { items in
+            if let id = items.first, items.count == 1,
+               let entry = filteredEntries.first(where: { $0.id == id }) {
+                Button("Edit", systemImage: "pencil") {
+                    onEditEntry(entry)
+                }
+            }
             Button("Delete", systemImage: "trash") {
                 deleteSelected(items)
             }
@@ -247,6 +269,6 @@ struct DetailView: View {
 }
 
 #Preview {
-    DetailView(month: 5, year: 2026, selectedTag: nil, onAddEntry: {}, onEditEntry: { _ in })
+    DetailView(month: 5, year: 2026, selectedTag: nil, onAddEntry: { _ in }, onEditEntry: { _ in })
         .modelContainer(BudgetingContainer.makePreviewContainer())
 }

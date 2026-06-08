@@ -2,10 +2,15 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+struct IdentifiableDate: Identifiable {
+    let id = UUID()
+    let date: Date
+}
+
 struct MainContentView: View {
     @State private var selectedMonth = Date()
     @State private var selectedTag: String?
-    @State private var showingAddSheet = false
+    @State private var addEntryDate: Date?
     @Binding var showingImport: Bool
     @State private var entryToEdit: Entry?
 
@@ -36,29 +41,29 @@ struct MainContentView: View {
                     month: Calendar.current.component(.month, from: selectedMonth),
                     year: Calendar.current.component(.year, from: selectedMonth),
                     selectedTag: selectedTag,
-                    onAddEntry: { showingAddSheet = true },
+                    onAddEntry: { date in
+                        addEntryDate = date
+                    },
                     onEditEntry: { entry in
                         entryToEdit = entry
                     }
                 )
             }
         }
-        .sheet(isPresented: $showingAddSheet) {
-            MacAddEditEntryView(mode: .add)
+        .sheet(item: Binding(
+            get: { addEntryDate.map { IdentifiableDate(date: $0) } },
+            set: { newValue in addEntryDate = newValue?.date }
+        )) { _ in
+            MacAddEditEntryView(mode: .add(initialDate: addEntryDate))
         }
-        .sheet(isPresented: Binding(
-            get: { entryToEdit != nil },
-            set: { if !$0 { entryToEdit = nil } }
-        )) {
-            if let entry = entryToEdit {
-                MacAddEditEntryView(mode: .edit(entry))
-            }
+        .sheet(item: $entryToEdit) { entry in
+            MacAddEditEntryView(mode: .edit(entry))
         }
         .sheet(isPresented: $showingImport) {
             MacCSVImportView()
         }
         .onReceive(NotificationCenter.default.publisher(for: .newEntry)) { _ in
-            showingAddSheet = true
+            addEntryDate = Date()
         }
     }
 }
