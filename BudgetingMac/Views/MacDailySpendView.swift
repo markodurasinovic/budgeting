@@ -72,7 +72,7 @@ struct MacDailySpendView: View {
                         .foregroundStyle(.secondary)
                     Text(MoneyHelper.format(estimatedTotal))
                         .font(.body)
-                        .foregroundStyle(estimatedTotal > totalSpend ? .orange : .green)
+                        .foregroundStyle(.primary)
                 }
             }
             .padding(.horizontal)
