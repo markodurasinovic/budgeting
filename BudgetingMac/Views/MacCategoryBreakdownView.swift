@@ -119,7 +119,7 @@ struct MacCategoryBreakdownView: View {
     }
 
     private var savingsCard: some View {
-        let savingsTotal = currentBudget.savings + currentBudget.investment + max(remainder, 0)
+        let savingsTotal = currentBudget.savings + currentBudget.investment + remainder
         let savingsPct = savingsRateValue.map { CGFloat(truncating: NSDecimalNumber(decimal: $0 * 100)) }
 
         return VStack(alignment: .leading, spacing: 14) {
@@ -132,7 +132,7 @@ struct MacCategoryBreakdownView: View {
                 Text(MoneyHelper.format(savingsTotal))
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(savingsTotal >= 0 ? Color.blue : Color.red)
 
                 if let pct = savingsPct {
                     GeometryReader { geo in
@@ -165,7 +165,6 @@ struct MacCategoryBreakdownView: View {
 
             metricRow("Savings", value: currentBudget.savings, icon: "leaf.fill", color: .blue)
             metricRow("Investment", value: currentBudget.investment, icon: "chart.line.uptrend.xyaxis", color: .purple)
-            metricRow("Surplus", value: max(remainder, 0), icon: "plus.circle.fill", color: .green)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
