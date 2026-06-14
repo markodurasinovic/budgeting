@@ -38,25 +38,26 @@ public enum BudgetStore {
     }
 
     private static let tagPalette: [String] = [
-        "#007AFF", "#FF9500", "#34C759", "#AF52DE", "#FF2D55",
-        "#5AC8FA", "#5856D6", "#FFD60A", "#00C7BE", "#32ADE6",
-        "#FF6482", "#44D9E6", "#6C63FF", "#FF6B35", "#B8E6B8",
-        "#E6B8B8", "#B8B8E6", "#E6D8B8", "#D8B8E6", "#B8E6D8",
+        "#E52222", "#E55C22", "#E59722", "#E5D122", "#BEE522",
+        "#83E522", "#49E522", "#22E535", "#22E570", "#22E5AA",
+        "#22E5E5", "#22AAE5", "#2270E5", "#2235E5", "#4922E5",
+        "#8322E5", "#BE22E5", "#E522D1", "#E52297", "#E5225C",
+        "#B23E3E", "#B2613E", "#B2843E", "#B2A63E", "#9BB23E",
+        "#78B23E", "#55B23E", "#3EB24A", "#3EB26C", "#3EB28F",
+        "#3EB2B2", "#3E8FB2", "#3E6CB2", "#3E4AB2", "#553EB2",
+        "#783EB2", "#9B3EB2", "#B23EA6", "#B23E84", "#B23E61",
+        "#8C4646", "#8C5B46", "#8C7046", "#8C8546", "#7E8C46",
+        "#698C46", "#548C46", "#468C4D", "#468C62", "#468C77",
+        "#468C8C", "#46778C", "#46628C", "#464D8C", "#54468C",
+        "#69468C", "#7E468C", "#8C4685", "#8C4670", "#8C465B",
     ]
 
-    private static func unusedColor(from existingTags: [Tag]) -> String {
-        var used = Set(existingTags.map { $0.colorHex }.filter { !$0.isEmpty })
-        for tag in existingTags where tag.colorHex.isEmpty {
-            let hash = tag.name.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
-            let idx = abs(hash) % tagPalette.count
-            used.insert(tagPalette[idx])
+    public static func colorForTag(_ tagName: String, allTags: [Tag]) -> String {
+        let sorted = allTags.map(\.name).sorted { $0.lowercased() < $1.lowercased() }
+        guard let index = sorted.firstIndex(where: { $0.lowercased() == tagName.lowercased() }) else {
+            return tagPalette[abs(tagName.lowercased().hashValue) % tagPalette.count]
         }
-        for color in tagPalette {
-            if !used.contains(color) {
-                return color
-            }
-        }
-        return tagPalette[existingTags.count % tagPalette.count]
+        return tagPalette[index % tagPalette.count]
     }
 
     private static func resolveTag(_ rawName: String, context: ModelContext) -> String {
@@ -73,7 +74,7 @@ public enum BudgetStore {
                 return canonical
             }
 
-            let tag = Tag(name: canonical, colorHex: unusedColor(from: existingTags))
+            let tag = Tag(name: canonical, colorHex: colorForTag(canonical, allTags: existingTags + [Tag(name: canonical)]))
             context.insert(tag)
             try? context.save()
             return canonical
@@ -167,21 +168,13 @@ public enum BudgetStore {
     }
 
     public static func tagColorHex(_ tags: [Tag], for tagName: String) -> String? {
-        guard let tag = tags.first(where: { $0.name.lowercased() == tagName.lowercased() }) else { return nil }
+        guard let tag = tags.first(where: { $0.name.lowercased() == tagName.lowercased() }) else {
+            return nil
+        }
         if !tag.colorHex.isEmpty {
             return tag.colorHex
         }
-        var used = Set(tags.map { $0.colorHex }.filter { !$0.isEmpty })
-        for t in tags where t.colorHex.isEmpty && t.name != tag.name {
-            let h = t.name.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
-            used.insert(tagPalette[abs(h) % tagPalette.count])
-        }
-        for color in tagPalette {
-            if !used.contains(color) {
-                return color
-            }
-        }
-        return tagPalette[tags.count % tagPalette.count]
+        return colorForTag(tagName, allTags: tags)
     }
 
     public static func searchEntries(_ entries: [Entry], query: String) -> [Entry] {
@@ -197,30 +190,9 @@ public enum BudgetStore {
         let descriptor = FetchDescriptor<Tag>()
         guard let tags = try? context.fetch(descriptor), !tags.isEmpty else { return }
 
-        var used = Set<String>()
-        for tag in tags {
-            if tag.colorHex.isEmpty { continue }
-            if used.contains(tag.colorHex) {
-                tag.colorHex = ""
-            } else {
-                used.insert(tag.colorHex)
-            }
-        }
-
-        var unassigned = tags.filter { $0.colorHex.isEmpty }
-        for tag in unassigned {
-            for color in tagPalette {
-                if !used.contains(color) {
-                    tag.colorHex = color
-                    used.insert(color)
-                    break
-                }
-            }
-            if tag.colorHex.isEmpty {
-                let idx = used.count % tagPalette.count
-                tag.colorHex = tagPalette[idx]
-                used.insert(tagPalette[idx])
-            }
+        let sorted = tags.sorted { $0.name.lowercased() < $1.name.lowercased() }
+        for (index, tag) in sorted.enumerated() {
+            tag.colorHex = tagPalette[index % tagPalette.count]
         }
         try? context.save()
     }
