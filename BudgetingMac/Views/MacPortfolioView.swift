@@ -32,62 +32,30 @@ struct MacPortfolioView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 20) {
                 if let row = currentRow {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(row.label)
-                            .font(.headline)
+                    netWorthCard(row: row)
 
-                        portfolioRow("S&S ISA", value: row.portfolio.ssIsa)
-                        portfolioRow("Cash ISA", value: row.portfolio.cashIsa)
-                        portfolioRow("LISA", value: row.portfolio.lisa)
-                        portfolioRow("Crypto", value: row.portfolio.crypto)
-                        Divider()
-                        totalRow("Total (excl. pension)", value: row.totalExPension, delta: previousRow.map { PortfolioStore.delta(current: row.totalExPension, previous: $0.totalExPension) })
-                        portfolioRow("Pension", value: row.portfolio.pension)
-                        totalRow("Grand Total", value: row.grandTotal, delta: previousRow.map { PortfolioStore.delta(current: row.grandTotal, previous: $0.grandTotal) })
-                        if let notes = row.portfolio.notes.nilIfEmpty {
-                            Text("Notes: \(notes)").font(.caption).foregroundStyle(.secondary)
-                        }
-                        if let d = row.debt {
-                            Divider()
-                            Text("Debts").font(.subheadline).fontWeight(.semibold)
-                            portfolioRow("Chase", value: d.chase)
-                            portfolioRow("Amex", value: d.amex)
-                            portfolioRow("Other", value: d.other)
-                            let dt = row.debtTotal
-                            totalRow("Debt Total", value: dt, delta: previousRow.flatMap { pr in pr.debt.map { PortfolioStore.delta(current: dt, previous: $0.chase + $0.amex + $0.other) } })
-                            Divider()
-                            totalRow("Net Worth", value: row.netGrandWorth, delta: previousRow.map { PortfolioStore.delta(current: row.netGrandWorth, previous: $0.netGrandWorth) })
-                        }
+                    HStack(spacing: 16) {
+                        investmentCard(row: row)
+                        debtsCard(row: row)
                     }
-                    .padding()
-                    .background(.bar)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    allocationCard(row: row)
+
+                    if let notes = row.portfolio.notes.nilIfEmpty {
+                        notesCard(notes: notes)
+                    }
 
                     if !allRows.isEmpty {
-                        Text("History")
-                            .font(.title3)
-                            .padding(.horizontal)
-
-                        ForEach(allRows) { row in
-                            HStack {
-                                Text(row.label)
-                                    .font(.caption)
-                                Spacer()
-                                Text(MoneyHelper.format(row.netGrandWorth))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.horizontal)
-                        }
+                        historyCard
                     }
                 } else {
                     ContentUnavailableView("No data for \(monthName(month, year))", systemImage: "chart.line.uptrend.xyaxis", description: Text("Tap + to add a snapshot"))
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.vertical)
+            .padding(20)
         }
         .toolbar {
             ToolbarItem {
@@ -105,37 +73,281 @@ struct MacPortfolioView: View {
         }
     }
 
+    private func netWorthCard(row: PortfolioRow) -> some View {
+        let delta = previousRow.map { PortfolioStore.delta(current: row.netGrandWorth, previous: $0.netGrandWorth) }
+        let deltaPct = previousRow.map { PortfolioStore.deltaPercent(current: row.netGrandWorth, previous: $0.netGrandWorth) }
+        let isPositive = delta.map { $0 >= 0 } ?? true
+
+        return VStack(spacing: 12) {
+            Text(row.label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            Text(MoneyHelper.format(row.netGrandWorth))
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .monospacedDigit()
+
+            if let d = delta {
+                HStack(spacing: 8) {
+                    Image(systemName: isPositive ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
+                        .font(.caption)
+                    Text(PortfolioStore.formatDelta(d))
+                        .fontWeight(.semibold)
+                    if let pct = deltaPct {
+                        Text("(\(PortfolioStore.formatDeltaPercent(pct)))")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .font(.callout)
+                .foregroundStyle(isPositive ? .green : .red)
+            } else {
+                Text("No previous data")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 20)
+        .background(.bar)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func investmentCard(row: PortfolioRow) -> some View {
+        let delta = previousRow.map { PortfolioStore.delta(current: row.grandTotal, previous: $0.grandTotal) }
+
+        return VStack(alignment: .leading, spacing: 14) {
+            Label("Investments", systemImage: "chart.line.uptrend.xyaxis")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            investmentRow("S&S ISA", value: row.portfolio.ssIsa, icon: "chart.bar.fill", color: .blue)
+            investmentRow("Cash ISA", value: row.portfolio.cashIsa, icon: "banknote.fill", color: .green)
+            investmentRow("LISA", value: row.portfolio.lisa, icon: "house.fill", color: .orange)
+            investmentRow("Crypto", value: row.portfolio.crypto, icon: "bitcoinsign.circle.fill", color: .purple)
+            investmentRow("Pension", value: row.portfolio.pension, icon: "building.columns.fill", color: .teal)
+
+            Divider()
+
+            totalRow("Grand Total", value: row.grandTotal, delta: delta, accent: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func debtsCard(row: PortfolioRow) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Debts", systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(row.debtTotal > 0 ? .red : .secondary)
+
+            if let d = row.debt {
+                debtRow("Chase", value: d.chase)
+                debtRow("Amex", value: d.amex)
+                debtRow("Other", value: d.other)
+
+                Divider()
+
+                totalRow("Debt Total", value: row.debtTotal, delta: previousRow.flatMap { pr in pr.debt.map { PortfolioStore.delta(current: row.debtTotal, previous: $0.chase + $0.amex + $0.other) } }, isDebt: true)
+            } else {
+                ContentUnavailableView("No debts", systemImage: "checkmark.circle.fill", description: Text("Looking good!"))
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func allocationCard(row: PortfolioRow) -> some View {
+        let items: [(String, Decimal, Color)] = [
+            ("S&S ISA", row.portfolio.ssIsa, .blue),
+            ("Cash ISA", row.portfolio.cashIsa, .green),
+            ("LISA", row.portfolio.lisa, .orange),
+            ("Crypto", row.portfolio.crypto, .purple),
+            ("Pension", row.portfolio.pension, .teal),
+        ].filter { $0.1 > 0 }
+
+        let total = items.map(\.1).reduce(Decimal(0), +)
+
+        return VStack(alignment: .leading, spacing: 14) {
+            Label("Allocation", systemImage: "chart.pie.fill")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            if total > 0 {
+                GeometryReader { geo in
+                    HStack(spacing: 2) {
+                        ForEach(items, id: \.0) { item in
+                            let width = geo.size.width * CGFloat(truncating: NSDecimalNumber(decimal: item.1 / total))
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(item.2)
+                                .frame(width: max(width, 4))
+                        }
+                    }
+                }
+                .frame(height: 14)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                let columns = [GridItem(.adaptive(minimum: 140))]
+                LazyVGrid(columns: columns, spacing: 8) {
+                    ForEach(items, id: \.0) { item in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(item.2)
+                                .frame(width: 8, height: 8)
+                            Text(item.0)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(String(format: "%.1f%%", NSDecimalNumber(decimal: item.1 / total * 100).doubleValue))
+                                .font(.caption)
+                                .monospacedDigit()
+                                .fontWeight(.medium)
+                        }
+                    }
+                }
+            } else {
+                Text("No investments recorded")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func notesCard(notes: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Notes", systemImage: "note.text")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            Text(notes)
+                .font(.body)
+                .foregroundStyle(.primary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var historyCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("History", systemImage: "clock.arrow.circlepath")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            ForEach(allRows) { row in
+                historyRow(row)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func historyRow(_ row: PortfolioRow) -> some View {
+        let isCurrent = row.portfolio.month == month && row.portfolio.year == year
+        let maxNet: Decimal = allRows.map(\.netGrandWorth).map(abs).max() ?? 1
+        let pct = CGFloat(truncating: NSDecimalNumber(decimal: abs(row.netGrandWorth) / max(maxNet, 1)))
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(row.label)
+                    .font(isCurrent ? .body : .caption)
+                    .fontWeight(isCurrent ? .bold : .regular)
+                    .foregroundStyle(isCurrent ? .primary : .secondary)
+                Spacer()
+                Text(MoneyHelper.format(row.netGrandWorth))
+                    .font(isCurrent ? .body : .caption)
+                    .monospacedDigit()
+                    .fontWeight(isCurrent ? .bold : .medium)
+                    .foregroundStyle(row.netGrandWorth >= 0 ? Color.primary : Color.red)
+            }
+
+            GeometryReader { geo in
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(isCurrent ? Color.accentColor.opacity(0.6) : Color.accentColor.opacity(0.2))
+                    .frame(width: geo.size.width * min(1, pct))
+            }
+            .frame(height: isCurrent ? 6 : 4)
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func investmentRow(_ label: String, value: Decimal, icon: String, color: Color) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+                .frame(width: 16)
+            Text(label)
+                .foregroundStyle(value > 0 ? .primary : .secondary)
+            Spacer()
+            Text(MoneyHelper.format(value))
+                .monospacedDigit()
+                .foregroundStyle(value > 0 ? .primary : .secondary)
+        }
+        .font(.body)
+    }
+
+    private func debtRow(_ label: String, value: Decimal) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "creditcard.fill")
+                .foregroundStyle(value > 0 ? .red : .secondary)
+                .frame(width: 16)
+            Text(label)
+                .foregroundStyle(value > 0 ? .primary : .secondary)
+            Spacer()
+            Text(MoneyHelper.format(value))
+                .monospacedDigit()
+                .foregroundStyle(value > 0 ? .red : .secondary)
+        }
+        .font(.body)
+    }
+
+    private func totalRow(_ label: String, value: Decimal, delta: Decimal?, accent: Bool = false, isDebt: Bool = false) -> some View {
+        HStack {
+            Text(label)
+                .fontWeight(accent ? .bold : .semibold)
+                .font(accent ? .title3 : .body)
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(MoneyHelper.format(value))
+                    .fontWeight(accent ? .bold : .semibold)
+                    .font(accent ? .title3 : .body)
+                    .monospacedDigit()
+                    .foregroundStyle(isDebt && value > 0 ? .red : .primary)
+                if let d = delta {
+                    let isPositive = d >= 0
+                    Text(PortfolioStore.formatDelta(d))
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .monospacedDigit()
+                        .foregroundStyle(isDebt ? (isPositive ? .red : .green) : (isPositive ? .green : .red))
+                }
+            }
+        }
+    }
+
     private func monthName(_ month: Int, _ year: Int) -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "MMMM yyyy"
         let components = DateComponents(year: year, month: month, day: 1)
         guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
         return fmt.string(from: date)
-    }
-
-    private func portfolioRow(_ label: String, value: Decimal) -> some View {
-        HStack {
-            Text(label)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Text(MoneyHelper.format(value))
-        }
-    }
-
-    private func totalRow(_ label: String, value: Decimal, delta: Decimal?) -> some View {
-        HStack {
-            Text(label)
-                .fontWeight(.semibold)
-            Spacer()
-            VStack(alignment: .trailing) {
-                Text(MoneyHelper.format(value))
-                if let d = delta {
-                    Text(PortfolioStore.formatDelta(d))
-                        .font(.caption)
-                        .foregroundStyle(d >= 0 ? .green : .red)
-                }
-            }
-        }
     }
 }
 
