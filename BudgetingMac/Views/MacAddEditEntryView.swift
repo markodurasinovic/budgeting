@@ -135,7 +135,7 @@ struct MacAddEditEntryView: View {
         }
         return VStack(spacing: 4) {
             TextField("Tag (optional)", text: text)
-            if !suggestions.isEmpty {
+                if !suggestions.isEmpty {
                 HStack(spacing: 6) {
                     ForEach(suggestions.prefix(5), id: \.self) { suggestion in
                         Button(suggestion) {

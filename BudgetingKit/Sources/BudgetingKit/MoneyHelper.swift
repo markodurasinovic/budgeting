@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptCore
 
 public enum MoneyHelper {
     private static let formatter: NumberFormatter = {
@@ -25,7 +26,27 @@ public enum MoneyHelper {
 
         guard !cleaned.isEmpty else { return nil }
 
-        return Decimal(string: cleaned, locale: Locale(identifier: "en_GB"))
-            ?? Decimal(string: cleaned)
+        let isExpression = cleaned.contains(where: { c in
+            "+*/".contains(c) || (c == "-" && cleaned.index(of: "-") != cleaned.startIndex)
+        })
+
+        if !isExpression {
+            return Decimal(string: cleaned, locale: Locale(identifier: "en_GB"))
+                ?? Decimal(string: cleaned)
+        }
+
+        return evaluateExpression(cleaned)
+    }
+
+    private static func evaluateExpression(_ expr: String) -> Decimal? {
+        let allowed = CharacterSet(charactersIn: "0123456789.+-*/() ")
+        guard expr.unicodeScalars.allSatisfy({ allowed.contains($0) }) else {
+            return nil
+        }
+        guard let context = JSContext() else { return nil }
+        guard let result = context.evaluateScript(expr), result.isNumber else {
+            return nil
+        }
+        return Decimal(result.toDouble())
     }
 }

@@ -123,7 +123,7 @@ struct DetailView: View {
             }
             .buttonStyle(.bordered)
             Button {
-                onAddEntry(selectedEntryDate)
+                onAddEntry(selectedEntryDate ?? Date())
             } label: {
                 Label("Add Entry", systemImage: "plus")
             }

@@ -14,7 +14,7 @@ struct MacDailySpendView: View {
     }
 
     private var maxDailyTotal: Decimal {
-        dailyTotals.map(\.total).max() ?? Decimal(0)
+        dailyTotals.map(\.total).map(abs).max() ?? Decimal(0)
     }
 
     private var totalSpend: Decimal {
@@ -37,6 +37,20 @@ struct MacDailySpendView: View {
         BudgetStore.daysInMonth(month: month, year: year)
     }
 
+    private func spendColor(for amount: Decimal) -> Color {
+        let absSpend = abs(amount)
+        if absSpend >= 35 { return .red }
+        if absSpend >= 25 { return .yellow }
+        return .green
+    }
+
+    private func barColor(for item: (day: Int, total: Decimal)) -> Color {
+        if item.day > daysElapsed || item.total == 0 {
+            return Color.gray.opacity(0.15)
+        }
+        return spendColor(for: item.total)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Daily Spend")
@@ -44,7 +58,7 @@ struct MacDailySpendView: View {
                 .fontWeight(.semibold)
                 .padding(.horizontal)
 
-            HStack(spacing: 24) {
+            HStack(spacing: 20) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Days elapsed")
                         .font(.caption)
@@ -63,8 +77,13 @@ struct MacDailySpendView: View {
                     Text("Avg per day")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(MoneyHelper.format(avgDailySpend))
-                        .font(.body)
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(spendColor(for: avgDailySpend))
+                            .frame(width: 10, height: 10)
+                        Text(MoneyHelper.format(avgDailySpend))
+                            .font(.body)
+                    }
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Estimated total")
@@ -77,49 +96,56 @@ struct MacDailySpendView: View {
             }
             .padding(.horizontal)
 
+            Divider()
+                .padding(.horizontal)
+
             ScrollView {
-                VStack(spacing: 2) {
+                VStack(spacing: 4) {
                     ForEach(dailyTotals, id: \.day) { item in
-                        HStack(spacing: 8) {
+                        let isFuture = item.day > daysElapsed
+                        let isZero = item.total == 0
+                        let amountColor: Color = {
+                            if isFuture { return .secondary }
+                            if isZero { return .secondary }
+                            if item.total < 0 { return .red }
+                            return .primary
+                        }()
+                        let isBold = !isFuture && !isZero
+                        let rowBg: Color = {
+                            if isFuture || isZero { return Color.clear }
+                            return spendColor(for: item.total).opacity(0.08)
+                        }()
+                        HStack(spacing: 10) {
                             Text("\(item.day)")
                                 .font(.caption)
                                 .monospacedDigit()
                                 .frame(width: 24, alignment: .trailing)
-                                .foregroundStyle(item.day <= daysElapsed ? .primary : .secondary)
+                                .foregroundStyle(isFuture ? .secondary : .primary)
 
                             MacLinearProgressBar(
                                 value: abs(item.total),
                                 total: max(maxDailyTotal, Decimal(1)),
                                 color: barColor(for: item)
                             )
+                            .frame(height: 20)
 
                             Text(MoneyHelper.format(item.total))
-                                .font(.caption)
+                                .font(.body)
                                 .monospacedDigit()
-                                .frame(minWidth: 70, alignment: .trailing)
-                                .foregroundStyle(item.total < 0 ? .red : item.total == 0 ? .secondary : .primary)
+                                .frame(minWidth: 80, alignment: .trailing)
+                                .foregroundStyle(amountColor)
+                                .fontWeight(isBold ? .medium : .regular)
                         }
-                        .padding(.vertical, 1)
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .background(rowBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
                 }
                 .padding(.horizontal)
             }
         }
         .padding(.top)
-    }
-
-    private func barColor(for item: (day: Int, total: Decimal)) -> Color {
-        if item.day > daysElapsed || item.total == 0 {
-            return Color.gray.opacity(0.2)
-        }
-        let absSpend = abs(item.total)
-        if absSpend >= 35 {
-            return .red
-        }
-        if absSpend >= 25 {
-            return .yellow
-        }
-        return .green
     }
 }
 
