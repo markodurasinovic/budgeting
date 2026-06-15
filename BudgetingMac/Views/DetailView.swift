@@ -86,11 +86,14 @@ struct DetailView: View {
         return BudgetStore.runningTotalSavings(budgets: prevBudgets, expensesByMonth: monthExpenses)
     }
 
+    private func colorForTag(_ tagName: String) -> Color {
+        Color.hex(tagName, from: BudgetStore.tagColorHex(tags, for: tagName))
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             headerBar
-            Divider()
-            budgetBar
+            summaryBar
             Divider()
             if filteredEntries.isEmpty {
                 emptyState
@@ -100,103 +103,145 @@ struct DetailView: View {
         }
         .searchable(text: $searchText, prompt: "Search entries")
         .navigationTitle(effectiveTag ?? "All Entries")
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    showingBudgetEdit = true
+                } label: {
+                    Label("Edit Budget", systemImage: "pencil.line")
+                }
+            }
+            ToolbarItem {
+                Button {
+                    onAddEntry(selectedEntryDate ?? Date())
+                } label: {
+                    Label("Add Entry", systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
         .sheet(isPresented: $showingBudgetEdit) {
             MacBudgetEditView(budget: currentBudget)
         }
     }
 
     private var headerBar: some View {
-        HStack {
-            VStack(alignment: .leading) {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(effectiveTag ?? "All Entries")
                     .font(.title2)
                     .fontWeight(.semibold)
                 Text(MoneyHelper.format(total))
-                    .font(.title3)
-                    .foregroundStyle(total < 0 ? .red : .secondary)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(total < 0 ? Color.red : Color.primary)
             }
             Spacer()
-            Button {
-                showingBudgetEdit = true
-            } label: {
-                Label("Budget", systemImage: "pencil.line")
+            if !tagTotals.isEmpty {
+                miniAllocation
             }
-            .buttonStyle(.bordered)
-            Button {
-                onAddEntry(selectedEntryDate ?? Date())
-            } label: {
-                Label("Add Entry", systemImage: "plus")
-            }
-            .buttonStyle(.borderedProminent)
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.bar)
     }
 
-    private var budgetBar: some View {
-        HStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Income")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(MoneyHelper.format(currentBudget.income))
-                    .font(.body)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Bills")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(MoneyHelper.format(currentBudget.bills))
-                    .font(.body)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Expenses")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(MoneyHelper.format(expenses))
-                    .font(.body)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Remainder")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(MoneyHelper.format(remainder))
-                    .font(.body)
-                    .foregroundStyle(remainder < 0 ? .red : .green)
-                if daysRemaining > 0 {
-                    Text("\(MoneyHelper.format(remainder / Decimal(daysRemaining))) / day")
-                        .font(.caption)
-                        .foregroundStyle(remainder < 0 ? .red : .green)
+    private var miniAllocation: some View {
+        let items = tagTotals.filter { $0.total != 0 }
+        let totalAbs = items.map(\.total).map(abs).reduce(Decimal(0), +)
+        return VStack(alignment: .trailing, spacing: 4) {
+            if totalAbs > 0 {
+                GeometryReader { geo in
+                    HStack(spacing: 2) {
+                        ForEach(items.prefix(8), id: \.tag) { item in
+                            let width = geo.size.width * CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / totalAbs))
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(colorForTag(item.tag))
+                                .frame(width: max(width, 3))
+                        }
+                    }
                 }
+                .frame(width: 120, height: 8)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Savings rate")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Text("\(filteredEntries.count) entries")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(width: 120)
+    }
+
+    private var summaryBar: some View {
+        HStack(spacing: 0) {
+            summaryCell("Income", value: currentBudget.income, icon: "banknote.fill", color: .green)
+            Divider()
+            summaryCell("Bills", value: currentBudget.bills, icon: "doc.text.fill", color: .orange)
+            Divider()
+            summaryCell("Expenses", value: expenses, icon: "cart.fill", color: .red)
+            Divider()
+            summaryCell("Remainder", value: remainder, icon: remainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill", color: remainder >= 0 ? .green : .red, highlight: true, subtitle: daysRemaining > 0 && remainder != 0 ? "\(MoneyHelper.format(remainder / Decimal(daysRemaining))) / day" : nil)
+            Divider()
+            VStack(alignment: .center, spacing: 2) {
                 if let rate = savingsRateValue {
                     Text(String(format: "%.1f%%", NSDecimalNumber(decimal: rate * 100).doubleValue))
                         .font(.body)
+                        .fontWeight(.semibold)
+                    Text("Savings rate")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 } else {
                     Text("—")
                         .foregroundStyle(.secondary)
+                    Text("Savings rate")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
-            Spacer()
+            .frame(maxWidth: .infinity)
+            Divider()
             VStack(alignment: .trailing, spacing: 2) {
-                Text("Total saved")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 Text(MoneyHelper.format(runningTotal))
                     .font(.body)
                     .fontWeight(.semibold)
+                    .monospacedDigit()
                 let delta = runningTotal - previousRunningTotal
                 Text("\(delta >= 0 ? "+" : "")\(MoneyHelper.format(delta))")
-                    .font(.caption)
-                    .foregroundStyle(delta >= 0 ? .green : .red)
+                    .font(.caption2)
+                    .monospacedDigit()
+                    .foregroundStyle(delta >= 0 ? Color.green : Color.red)
+                Text("Total saved")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.vertical, 6)
         .background(.bar)
+    }
+
+    private func summaryCell(_ label: String, value: Decimal, icon: String, color: Color, highlight: Bool = false, subtitle: String? = nil) -> some View {
+        VStack(alignment: .center, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption2)
+                    .foregroundStyle(color)
+                Text(MoneyHelper.format(value))
+                    .font(highlight ? .body : .callout)
+                    .fontWeight(highlight ? .bold : .medium)
+                    .monospacedDigit()
+                    .foregroundStyle(highlight ? color : (value < 0 ? Color.red : Color.primary))
+            }
+            if let subtitle {
+                Text(subtitle)
+                    .font(.caption2)
+                    .monospacedDigit()
+                    .foregroundStyle(color)
+            }
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var emptyState: some View {
@@ -227,7 +272,7 @@ struct DetailView: View {
             TableColumn("Tag") { entry in
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(Color.hex(entry.tag, from: BudgetStore.tagColorHex(tags, for: entry.tag)))
+                        .fill(colorForTag(entry.tag))
                         .frame(width: 8, height: 8)
                     Text(entry.tag)
                 }
@@ -238,7 +283,8 @@ struct DetailView: View {
 
             TableColumn("Amount") { entry in
                 Text(MoneyHelper.format(entry.amount))
-                    .foregroundStyle(entry.amount < 0 ? .red : .primary)
+                    .foregroundStyle(entry.amount < 0 ? Color.red : Color.primary)
+                    .monospacedDigit()
                     .onTapGesture(count: 2) {
                         onEditEntry(entry)
                     }
@@ -260,6 +306,15 @@ struct DetailView: View {
         .onDeleteCommand {
             deleteSelected(selectedEntries)
         }
+    }
+
+    private var tagTotals: [(tag: String, total: Decimal)] {
+        let monthEntries = BudgetStore.entriesForMonth(entries, month: month, year: year)
+        var totals: [String: Decimal] = [:]
+        for entry in monthEntries {
+            totals[entry.tag, default: Decimal(0)] += entry.amount
+        }
+        return totals.sorted { abs($0.value) > abs($1.value) }.map { (tag: $0.key, total: $0.value) }
     }
 
     private func deleteSelected(_ ids: Set<Entry.ID>) {
