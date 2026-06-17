@@ -66,6 +66,7 @@ struct MacCategoryBreakdownView: View {
             }
             .padding(20)
         }
+        .navigationTitle("Categories")
     }
 
     private var totalCard: some View {

@@ -89,6 +89,7 @@ struct MacDailySpendView: View {
             }
             .padding(20)
         }
+        .navigationTitle("Daily Spend")
     }
 
     private var totalSpendCard: some View {

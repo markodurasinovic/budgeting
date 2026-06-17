@@ -127,14 +127,17 @@ struct DetailView: View {
 
     private var headerBar: some View {
         HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(effectiveTag ?? "All Entries")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Text(MoneyHelper.format(total))
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(MoneyHelper.format(remainder))
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(total < 0 ? Color.red : Color.primary)
+                    .foregroundStyle(remainder >= 0 ? Color.green : Color.red)
+                if daysRemaining > 0 && remainder != 0 {
+                    Text("\(MoneyHelper.format(remainder / Decimal(daysRemaining))) / day")
+                        .font(.callout)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             if !tagTotals.isEmpty {
@@ -178,8 +181,6 @@ struct DetailView: View {
             summaryCell("Bills", value: currentBudget.bills, icon: "doc.text.fill", color: .orange)
             Divider()
             summaryCell("Expenses", value: expenses, icon: "cart.fill", color: .red)
-            Divider()
-            summaryCell("Remainder", value: remainder, icon: remainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill", color: remainder >= 0 ? .green : .red, highlight: true, subtitle: daysRemaining > 0 && remainder != 0 ? "\(MoneyHelper.format(remainder / Decimal(daysRemaining))) / day" : nil)
             Divider()
             VStack(alignment: .center, spacing: 2) {
                 if let rate = savingsRateValue {

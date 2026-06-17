@@ -68,6 +68,7 @@ struct MacPortfolioView: View {
                 }
             }
         }
+        .navigationTitle("Portfolio")
         .sheet(item: $editState) { state in
             MacPortfolioEditView(portfolio: state.portfolio, debt: state.debt)
         }
