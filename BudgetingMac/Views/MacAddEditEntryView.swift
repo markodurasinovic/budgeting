@@ -2,6 +2,10 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+/// Sheet for adding one or more entries on a shared date, or editing a single
+/// existing entry. In add mode the form shows a stackable list of rows so the
+/// user can record several purchases at once; in edit mode it shows the single
+/// entry's fields plus a delete button.
 struct MacAddEditEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -41,7 +45,7 @@ struct MacAddEditEntryView: View {
             _editingEntry = State(initialValue: entry)
             _editingItem = State(initialValue: entry.item)
             _editingTag = State(initialValue: entry.tag)
-            _editingAmountText = State(initialValue: MoneyHelper.format(entry.amount).replacingOccurrences(of: "£", with: ""))
+            _editingAmountText = State(initialValue: MoneyHelper.formatPlain(entry.amount))
         }
     }
 

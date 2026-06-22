@@ -2,6 +2,10 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+/// The "Daily Spend" analytics view: a big total card, an overview card
+/// (average/estimated/biggest day/zero-spend days), a budget-tracking card with
+/// a usage bar, a top-3 spending-days spotlight, and a per-day breakdown bar
+/// chart — all for the selected month.
 struct MacDailySpendView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: [SortDescriptor(\Entry.date, order: .reverse), SortDescriptor(\Entry.item)])
@@ -33,13 +37,8 @@ struct MacDailySpendView: View {
         BudgetStore.estimatedMonthlySpend(entries, month: month, year: year)
     }
 
-    private var daysElapsed: Int {
-        BudgetStore.daysElapsedInMonth(month: month, year: year)
-    }
-
-    private var totalDays: Int {
-        BudgetStore.daysInMonth(month: month, year: year)
-    }
+    private var daysElapsed: Int { BudgetStore.daysElapsedInMonth(month: month, year: year) }
+    private var totalDays: Int { BudgetStore.daysInMonth(month: month, year: year) }
 
     private var currentBudget: MonthlyBudget {
         BudgetStore.budgetForMonth(month, year: year, context: modelContext)
@@ -47,12 +46,14 @@ struct MacDailySpendView: View {
 
     private var remainder: Decimal {
         let expenses = BudgetStore.totalForMonth(entries, month: month, year: year)
-        return BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
+        return BudgetStore.remainder(
+            income: currentBudget.income, expenses: expenses,
+            bills: currentBudget.bills, savings: currentBudget.savings,
+            investment: currentBudget.investment
+        )
     }
 
-    private var daysRemaining: Int {
-        max(totalDays - daysElapsed, 0)
-    }
+    private var daysRemaining: Int { max(totalDays - daysElapsed, 0) }
 
     private var biggestDay: (day: Int, total: Decimal)? {
         let pastDays = dailyTotals.filter { $0.day <= daysElapsed && $0.total != 0 }
@@ -94,7 +95,7 @@ struct MacDailySpendView: View {
 
     private var totalSpendCard: some View {
         VStack(spacing: 12) {
-            Text(monthName(month, year))
+            Text(DateFormatting.monthYear(month: month, year: year))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -146,7 +147,7 @@ struct MacDailySpendView: View {
     private var budgetTrackCard: some View {
         let spent = abs(BudgetStore.totalForMonth(entries, month: month, year: year))
         let budget = currentBudget.income - currentBudget.bills - currentBudget.savings - currentBudget.investment
-        let budgetUsedPct = budget > 0 ? CGFloat(truncating: NSDecimalNumber(decimal: spent / budget * 100)) : CGFloat(0)
+        let budgetUsedPct = budget > 0 ? (spent / budget * 100).cgFloatValue : CGFloat(0)
         let dailyBudget = daysRemaining > 0 ? remainder / Decimal(daysRemaining) : Decimal(0)
 
         return VStack(alignment: .leading, spacing: 14) {
@@ -175,7 +176,7 @@ struct MacDailySpendView: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
-.fill(Color(nsColor: .quaternaryLabelColor))
+                                .fill(Color(nsColor: .quaternaryLabelColor))
                                 .frame(height: 10)
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(budgetUsedPct > 100 ? Color.red : Color.accentColor)
@@ -245,9 +246,7 @@ struct MacDailySpendView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            ForEach(dailyTotals, id: \.day) { item in
-                dailyRow(item)
-            }
+            ForEach(dailyTotals, id: \.day) { dailyRow($0) }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -282,7 +281,7 @@ struct MacDailySpendView: View {
                         .fill(Color(nsColor: .quaternaryLabelColor))
                     RoundedRectangle(cornerRadius: 3)
                         .fill(color)
-                        .frame(width: isZero || isFuture ? 0 : geo.size.width * min(1, CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / max(maxDailyTotal, Decimal(1))))))
+                        .frame(width: isZero || isFuture ? 0 : geo.size.width * min(1, (abs(item.total) / max(maxDailyTotal, Decimal(1))).cgFloatValue))
                 }
             }
             .frame(height: isToday ? 8 : 6)
@@ -336,17 +335,7 @@ struct MacDailySpendView: View {
     private func dayName(_ day: Int) -> String {
         let components = DateComponents(year: year, month: month, day: day)
         guard let date = Calendar.current.date(from: components) else { return "Day \(day)" }
-        let fmt = DateFormatter()
-        fmt.dateFormat = "EEE d"
-        return fmt.string(from: date)
-    }
-
-    private func monthName(_ month: Int, _ year: Int) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: year, month: month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
-        return fmt.string(from: date)
+        return DateFormatting.weekdayDay(from: date)
     }
 }
 

@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+/// The "Categories" analytics view: a big total card, a budget overview, a
+/// savings card with a progress bar, a spending-allocation bar, and a
+/// per-category breakdown with bars and percentages — all for the selected month.
 struct MacCategoryBreakdownView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: [SortDescriptor(\Entry.date, order: .reverse), SortDescriptor(\Entry.item)])
@@ -30,11 +33,18 @@ struct MacCategoryBreakdownView: View {
 
     private var remainder: Decimal {
         let expenses = BudgetStore.totalForMonth(entries, month: month, year: year)
-        return BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
+        return BudgetStore.remainder(
+            income: currentBudget.income, expenses: expenses,
+            bills: currentBudget.bills, savings: currentBudget.savings,
+            investment: currentBudget.investment
+        )
     }
 
     private var savingsRateValue: Decimal? {
-        BudgetStore.savingsRate(savings: currentBudget.savings, investment: currentBudget.investment, income: currentBudget.income, remainder: remainder)
+        BudgetStore.savingsRate(
+            savings: currentBudget.savings, investment: currentBudget.investment,
+            income: currentBudget.income, remainder: remainder
+        )
     }
 
     private var tagEntryCounts: [String: Int] {
@@ -71,7 +81,7 @@ struct MacCategoryBreakdownView: View {
 
     private var totalCard: some View {
         VStack(spacing: 12) {
-            Text(monthName(month, year))
+            Text(DateFormatting.monthYear(month: month, year: year))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -111,7 +121,9 @@ struct MacCategoryBreakdownView: View {
 
             Divider()
 
-            metricRow("Remainder", value: remainder, icon: remainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill", color: remainder >= 0 ? .green : .red, accent: true)
+            metricRow("Remainder", value: remainder,
+                      icon: remainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill",
+                      color: remainder >= 0 ? .green : .red, accent: true)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -121,7 +133,7 @@ struct MacCategoryBreakdownView: View {
 
     private var savingsCard: some View {
         let savingsTotal = currentBudget.savings + currentBudget.investment + remainder
-        let savingsPct = savingsRateValue.map { CGFloat(truncating: NSDecimalNumber(decimal: $0 * 100)) }
+        let savingsPct = savingsRateValue.map { ($0 * 100).cgFloatValue }
 
         return VStack(alignment: .leading, spacing: 14) {
             Label("Savings", systemImage: "leaf.fill")
@@ -183,11 +195,11 @@ struct MacCategoryBreakdownView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            if !items.isEmpty && abs(total) > 0 {
+            if !items.isEmpty, abs(total) > 0 {
                 GeometryReader { geo in
                     HStack(spacing: 2) {
                         ForEach(items, id: \.tag) { item in
-                            let width = geo.size.width * CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / abs(total)))
+                            let width = geo.size.width * (abs(item.total) / abs(total)).cgFloatValue
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(colorForTag(item.tag))
                                 .frame(width: max(width, 4))
@@ -208,7 +220,8 @@ struct MacCategoryBreakdownView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
-                            Text(String(format: "%.1f%%", abs(total) > 0 ? NSDecimalNumber(decimal: abs(item.total) / abs(total) * 100).doubleValue : 0))
+                            Text(String(format: "%.1f%%",
+                                        abs(total) > 0 ? (abs(item.total) / abs(total) * 100).doubleValue : 0))
                                 .font(.caption)
                                 .monospacedDigit()
                                 .fontWeight(.medium)
@@ -238,9 +251,7 @@ struct MacCategoryBreakdownView: View {
                 ContentUnavailableView("No entries", systemImage: "tray", description: Text("Add entries to see categories"))
                     .frame(maxWidth: .infinity)
             } else {
-                ForEach(tagTotals, id: \.tag) { item in
-                    categoryRow(item)
-                }
+                ForEach(tagTotals, id: \.tag) { categoryRow($0) }
             }
         }
         .padding(16)
@@ -250,9 +261,9 @@ struct MacCategoryBreakdownView: View {
     }
 
     private func categoryRow(_ item: (tag: String, total: Decimal)) -> some View {
-        let pct = abs(totalExpenses) > 0 ? CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / abs(totalExpenses))) : CGFloat(0)
+        let pct: CGFloat = abs(totalExpenses) > 0 ? (abs(item.total) / abs(totalExpenses)).cgFloatValue : 0
         let count = tagEntryCounts[item.tag, default: 0]
-        let isLargest = tagTotals.first.flatMap { item.tag == $0.tag && item.total == $0.total } ?? false
+        let isLargest = tagTotals.first.map { item.tag == $0.tag && item.total == $0.total } ?? false
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
@@ -314,34 +325,6 @@ struct MacCategoryBreakdownView: View {
                 .foregroundStyle(accent ? color : (value < 0 ? Color.red : Color.primary))
         }
         .font(.body)
-    }
-
-    private func monthName(_ month: Int, _ year: Int) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: year, month: month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
-        return fmt.string(from: date)
-    }
-}
-
-struct MacLinearProgressBar: View {
-    let value: Decimal
-    let total: Decimal
-    let color: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color(nsColor: .quaternaryLabelColor))
-                    .frame(height: 8)
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(color)
-                    .frame(width: total > 0 ? geo.size.width * min(1, CGFloat(truncating: NSDecimalNumber(decimal: value / total))) : 0, height: 8)
-            }
-        }
-        .frame(height: 8)
     }
 }
 

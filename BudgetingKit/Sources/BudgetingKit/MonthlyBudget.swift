@@ -1,6 +1,14 @@
 import Foundation
 import SwiftData
 
+/// The monthly budget envelope: income and the four named allocations.
+///
+/// One row per `(month, year)`. Created on demand by
+/// `BudgetStore.budgetForMonth`. `remainder` is not stored — it is derived as
+/// `income - expenses - bills - savings - investment` (see `BudgetStore.remainder`).
+///
+/// All fields are `Decimal` for money precision. Defaults are `0` so a freshly
+/// created month is a valid empty budget.
 @Model
 final public class MonthlyBudget {
     public var id: UUID

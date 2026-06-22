@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+/// Sheet for editing a single month's budget envelope (income, bills, savings,
+/// investment). Shows a live remainder and savings rate as the user types, then
+/// writes the parsed values back to the `MonthlyBudget` on save.
 struct MacBudgetEditView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -12,17 +15,29 @@ struct MacBudgetEditView: View {
     @State private var investmentText = ""
     @State private var billsText = ""
 
+    /// Parses `text` as a `Decimal`, defaulting to `0` for empty/invalid input
+    /// so the live calculations below never surface an optional.
+    private func parsed(_ text: String) -> Decimal {
+        MoneyHelper.parse(text) ?? 0
+    }
+
     private var remainder: Decimal {
-        BudgetStore.remainder(income: MoneyHelper.parse(incomeText) ?? 0, expenses: 0, bills: MoneyHelper.parse(billsText) ?? 0, savings: MoneyHelper.parse(savingsText) ?? 0, investment: MoneyHelper.parse(investmentText) ?? 0)
+        BudgetStore.remainder(
+            income: parsed(incomeText), expenses: 0,
+            bills: parsed(billsText), savings: parsed(savingsText),
+            investment: parsed(investmentText)
+        )
     }
 
     private var savingsRateValue: Decimal? {
         BudgetStore.savingsRate(
-            savings: MoneyHelper.parse(savingsText) ?? 0,
-            investment: MoneyHelper.parse(investmentText) ?? 0,
-            income: MoneyHelper.parse(incomeText) ?? 0,
-            remainder: remainder
+            savings: parsed(savingsText), investment: parsed(investmentText),
+            income: parsed(incomeText), remainder: remainder
         )
+    }
+
+    private var totalSaved: Decimal {
+        parsed(savingsText) + parsed(investmentText) + remainder
     }
 
     var body: some View {
@@ -40,19 +55,15 @@ struct MacBudgetEditView: View {
 
             VStack(spacing: 4) {
                 HStack {
-Text("Total saved:")
-                     Spacer()
-                     Text(MoneyHelper.format((MoneyHelper.parse(savingsText) ?? 0) + (MoneyHelper.parse(investmentText) ?? 0) + remainder))
+                    Text("Total saved:")
+                    Spacer()
+                    Text(MoneyHelper.format(totalSaved))
                 }
                 HStack {
                     Text("Savings rate:")
                     Spacer()
-                    if let rate = savingsRateValue {
-                        Text(String(format: "%.1f%%", NSDecimalNumber(decimal: rate * 100).doubleValue))
-                    } else {
-                        Text("—")
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(MoneyHelper.formatPercent(savingsRateValue))
+                        .foregroundStyle(savingsRateValue == nil ? .secondary : .primary)
                 }
             }
             .padding(.horizontal)
@@ -62,10 +73,10 @@ Text("Total saved:")
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Save") {
-                    budget.income = MoneyHelper.parse(incomeText) ?? 0
-                    budget.bills = MoneyHelper.parse(billsText) ?? 0
-                    budget.savings = MoneyHelper.parse(savingsText) ?? 0
-                    budget.investment = MoneyHelper.parse(investmentText) ?? 0
+                    budget.income = parsed(incomeText)
+                    budget.bills = parsed(billsText)
+                    budget.savings = parsed(savingsText)
+                    budget.investment = parsed(investmentText)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -76,10 +87,10 @@ Text("Total saved:")
         }
         .frame(width: 350, height: 380)
         .onAppear {
-            incomeText = budget.income == 0 ? "" : MoneyHelper.format(budget.income).replacingOccurrences(of: "£", with: "")
-            billsText = budget.bills == 0 ? "" : MoneyHelper.format(budget.bills).replacingOccurrences(of: "£", with: "")
-            savingsText = budget.savings == 0 ? "" : MoneyHelper.format(budget.savings).replacingOccurrences(of: "£", with: "")
-            investmentText = budget.investment == 0 ? "" : MoneyHelper.format(budget.investment).replacingOccurrences(of: "£", with: "")
+            incomeText = budget.income == 0 ? "" : MoneyHelper.formatPlain(budget.income)
+            billsText = budget.bills == 0 ? "" : MoneyHelper.formatPlain(budget.bills)
+            savingsText = budget.savings == 0 ? "" : MoneyHelper.formatPlain(budget.savings)
+            investmentText = budget.investment == 0 ? "" : MoneyHelper.formatPlain(budget.investment)
         }
     }
 }

@@ -4,7 +4,7 @@
 
 The widget shares data with the main app via **App Group UserDefaults** (`group.com.markodurasinovic.budgeting`). The main app writes budget summary data to UserDefaults whenever entries change, and the widget reads from those same UserDefaults to display the remainder.
 
-- **Data flow**: App → `BudgetingContainer.writeWidgetData()` → App Group UserDefaults → Widget reads on timeline refresh
+- **Data flow**: App → `WidgetData.write(context:)` → App Group UserDefaults → Widget reads on timeline refresh
 - **Deep link**: The "Add Entry" button on the widget opens `budgeting://add-entry`, which the app handles via `.onOpenURL` to present the add-entry sheet
 - **Refresh**: Widget refreshes every 4 hours automatically, plus immediately after adding/editing entries or importing CSV
 
@@ -49,14 +49,14 @@ After building and installing the app:
 | `BudgetingWidget/BudgetingWidget.swift` | Widget UI (3 sizes) + TimelineProvider |
 | `BudgetingWidget/BudgetingWidget.entitlements` | App Group entitlement |
 | `BudgetingMac/BudgetingMac.entitlements` | App Group entitlement (main app) |
-| `BudgetingKit/Sources/BudgetingKit/BudgetingContainer.swift` | `writeWidgetData()` — writes budget data to shared UserDefaults |
+| `BudgetingKit/Sources/BudgetingKit/WidgetData.swift` | `write(context:)` / `read()` — writes & reads budget data in the shared App Group UserDefaults |
 | `BudgetingMac/BudgetingMacApp.swift` | Deep link handler (`budgeting://add-entry`) |
 | `BudgetingMac/Views/MainContentView.swift` | Widget data write + refresh triggers |
 | `project.yml` | XcodeGen config — widget target + URL scheme |
 
 ## UserDefaults Keys
 
-Written by `BudgetingContainer.writeWidgetData()`, read by `BudgetTimelineProvider`:
+Written by `WidgetData.write(context:)`, read by `BudgetTimelineProvider` via `WidgetData.read()`:
 
 | Key | Type | Description |
 |-----|------|-------------|

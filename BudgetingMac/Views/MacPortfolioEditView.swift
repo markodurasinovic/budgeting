@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+/// Sheet for editing a single month's portfolio and debt snapshots. Loads the
+/// current values on appear (showing empty fields for zero balances), and writes
+/// the parsed values back to both snapshots on save.
 struct MacPortfolioEditView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -19,11 +22,7 @@ struct MacPortfolioEditView: View {
     @State private var otherText = ""
 
     private var monthName: String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: portfolio.year, month: portfolio.month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(portfolio.month)/\(portfolio.year)" }
-        return dateFormatter.string(from: date)
+        DateFormatting.monthYear(month: portfolio.month, year: portfolio.year)
     }
 
     var body: some View {
@@ -62,16 +61,22 @@ struct MacPortfolioEditView: View {
         .onAppear(perform: loadValues)
     }
 
+    /// Populates the text fields from the snapshots, leaving a field empty when
+    /// the stored balance is zero (so new months don't show a sea of `£0`).
     private func loadValues() {
-        ssIsaText = portfolio.ssIsa == 0 ? "" : MoneyHelper.format(portfolio.ssIsa).replacingOccurrences(of: "£", with: "")
-        cashIsaText = portfolio.cashIsa == 0 ? "" : MoneyHelper.format(portfolio.cashIsa).replacingOccurrences(of: "£", with: "")
-        lisaText = portfolio.lisa == 0 ? "" : MoneyHelper.format(portfolio.lisa).replacingOccurrences(of: "£", with: "")
-        cryptoText = portfolio.crypto == 0 ? "" : MoneyHelper.format(portfolio.crypto).replacingOccurrences(of: "£", with: "")
-        pensionText = portfolio.pension == 0 ? "" : MoneyHelper.format(portfolio.pension).replacingOccurrences(of: "£", with: "")
+        ssIsaText = formatPlainIfNonZero(portfolio.ssIsa)
+        cashIsaText = formatPlainIfNonZero(portfolio.cashIsa)
+        lisaText = formatPlainIfNonZero(portfolio.lisa)
+        cryptoText = formatPlainIfNonZero(portfolio.crypto)
+        pensionText = formatPlainIfNonZero(portfolio.pension)
         notesText = portfolio.notes
-        chaseText = debt.chase == 0 ? "" : MoneyHelper.format(debt.chase).replacingOccurrences(of: "£", with: "")
-        amexText = debt.amex == 0 ? "" : MoneyHelper.format(debt.amex).replacingOccurrences(of: "£", with: "")
-        otherText = debt.other == 0 ? "" : MoneyHelper.format(debt.other).replacingOccurrences(of: "£", with: "")
+        chaseText = formatPlainIfNonZero(debt.chase)
+        amexText = formatPlainIfNonZero(debt.amex)
+        otherText = formatPlainIfNonZero(debt.other)
+    }
+
+    private func formatPlainIfNonZero(_ value: Decimal) -> String {
+        value == 0 ? "" : MoneyHelper.formatPlain(value)
     }
 
     private func save() {

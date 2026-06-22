@@ -3,18 +3,23 @@ import SwiftData
 import BudgetingKit
 import UniformTypeIdentifiers
 
+/// Registers `.xlsx` as a `UTType` so `fileImporter` can accept it alongside CSV.
+/// `UTType(filenameExtension:)` returns nil on systems without the type
+/// registered, so we fall back to `.data`.
 extension UTType {
     static var xlsx: UTType {
         UTType(filenameExtension: "xlsx") ?? .data
     }
 }
 
+/// The import sheet: lets the user pick one or more CSV/XLSX files and shows a
+/// summary of what was imported (entries, budget months, sheets, skipped rows,
+/// errors). All selected files are aggregated into a single result.
 struct MacCSVImportView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @State private var totalResult: CSVImporter.ImportResult?
-    @State private var xlsxResult: XLSXImporter.ImportResult?
+    @State private var result: ImportResult?
     @State private var isImporting = false
     @State private var showingResult = false
 
@@ -37,11 +42,9 @@ struct MacCSVImportView: View {
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
 
-                Button("Choose Files") {
-                    isImporting = true
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.defaultAction)
+                Button("Choose Files") { isImporting = true }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
             }
         }
         .padding()
@@ -50,37 +53,24 @@ struct MacCSVImportView: View {
             isPresented: $isImporting,
             allowedContentTypes: [.commaSeparatedText, .xlsx],
             allowsMultipleSelection: true
-        ) { outcome in
-            handleFileImport(outcome)
-        }
+        ) { handleFileImport($0) }
         .sheet(isPresented: $showingResult) {
-            if let r = totalResult {
-                MacImportResultView(
-                    result: r,
-                    skippedRows: r.skippedRows,
-                    sheetNames: [],
-                    onDone: { dismiss() }
-                )
-            } else if let xr = xlsxResult {
-                MacImportResultView(
-                    result: CSVImporter.ImportResult(imported: xr.imported, skipped: xr.skipped, budgetMonths: xr.budgetMonths, errors: xr.errors, skippedRows: xr.skippedRows),
-                    skippedRows: xr.skippedRows,
-                    sheetNames: xr.sheetNames,
-                    onDone: { dismiss() }
-                )
+            if let result {
+                MacImportResultView(result: result, onDone: { dismiss() })
             }
         }
     }
 
+    /// Imports every selected URL, aggregating CSV and XLSX results into a
+    /// single `ImportResult`. A single result state (instead of separate
+    /// per-format states) keeps mixed CSV+XLSX selections consistent.
     private func handleFileImport(_ outcome: Result<[URL], Error>) {
         switch outcome {
         case .success(let urls):
-            var totalImported = 0
-            var totalSkipped = 0
-            var totalBudgetMonths = 0
-            var allErrors: [String] = []
-            var allSkippedRows: [String] = []
-            var allSheetNames: [String] = []
+            var imported = 0, skipped = 0, budgetMonths = 0
+            var errors: [String] = []
+            var skippedRows: [String] = []
+            var sheetNames: [String] = []
 
             for url in urls {
                 guard url.startAccessingSecurityScopedResource() else { continue }
@@ -89,42 +79,44 @@ struct MacCSVImportView: View {
                 do {
                     if url.pathExtension == "xlsx" {
                         let data = try Data(contentsOf: url)
-                        let result = XLSXImporter.importEntries(from: data, context: modelContext)
-                        totalImported += result.imported
-                        totalSkipped += result.skipped
-                        totalBudgetMonths += result.budgetMonths
-                        allErrors.append(contentsOf: result.errors)
-                        allSkippedRows.append(contentsOf: result.skippedRows)
-                        allSheetNames.append(contentsOf: result.sheetNames)
-                        xlsxResult = XLSXImporter.ImportResult(imported: totalImported, skipped: totalSkipped, budgetMonths: totalBudgetMonths, errors: allErrors, skippedRows: allSkippedRows, sheetNames: allSheetNames)
+                        let r = XLSXImporter.importEntries(from: data, context: modelContext)
+                        imported += r.imported
+                        skipped += r.skipped
+                        budgetMonths += r.budgetMonths
+                        errors.append(contentsOf: r.errors)
+                        skippedRows.append(contentsOf: r.skippedRows)
+                        sheetNames.append(contentsOf: r.sheetNames)
                     } else {
                         let content = try String(contentsOf: url, encoding: .utf8)
-                        let result = CSVImporter.importEntries(from: content, context: modelContext)
-                        totalImported += result.imported
-                        totalSkipped += result.skipped
-                        totalBudgetMonths += result.budgetMonths
-                        allErrors.append(contentsOf: result.errors)
-                        allSkippedRows.append(contentsOf: result.skippedRows)
-                        totalResult = CSVImporter.ImportResult(imported: totalImported, skipped: totalSkipped, budgetMonths: totalBudgetMonths, errors: allErrors, skippedRows: allSkippedRows)
+                        let r = CSVImporter.importEntries(from: content, context: modelContext)
+                        imported += r.imported
+                        skipped += r.skipped
+                        budgetMonths += r.budgetMonths
+                        errors.append(contentsOf: r.errors)
+                        skippedRows.append(contentsOf: r.skippedRows)
                     }
                 } catch {
-                    allErrors.append("\(url.lastPathComponent): \(error.localizedDescription)")
+                    errors.append("\(url.lastPathComponent): \(error.localizedDescription)")
                 }
             }
 
+            result = ImportResult(
+                imported: imported, skipped: skipped, budgetMonths: budgetMonths,
+                errors: errors, skippedRows: skippedRows, sheetNames: sheetNames
+            )
             showingResult = true
 
         case .failure(let error):
-            totalResult = CSVImporter.ImportResult(imported: 0, skipped: 0, budgetMonths: 0, errors: [error.localizedDescription])
+            result = ImportResult(imported: 0, skipped: 0, budgetMonths: 0, errors: [error.localizedDescription])
             showingResult = true
         }
     }
 }
 
+/// The post-import summary, shown in a tabbed window: results counts, skipped
+/// rows, and any errors.
 struct MacImportResultView: View {
-    let result: CSVImporter.ImportResult
-    let skippedRows: [String]
-    let sheetNames: [String]
+    let result: ImportResult
     let onDone: () -> Void
 
     @State private var selectedTab = 0
@@ -139,7 +131,7 @@ struct MacImportResultView: View {
                     .tabItem { Label("Summary", systemImage: "list.bullet") }
                     .tag(0)
 
-                if !skippedRows.isEmpty {
+                if !result.skippedRows.isEmpty {
                     skippedTab
                         .tabItem { Label("Skipped", systemImage: "exclamationmark.triangle") }
                         .tag(1)
@@ -168,31 +160,27 @@ struct MacImportResultView: View {
                 HStack {
                     Text("Entries imported")
                     Spacer()
-                    Text("\(result.imported)")
-                        .foregroundStyle(.secondary)
+                    Text("\(result.imported)").foregroundStyle(.secondary)
                 }
                 if result.budgetMonths > 0 {
                     HStack {
                         Text("Budget months updated")
                         Spacer()
-                        Text("\(result.budgetMonths)")
-                            .foregroundStyle(.secondary)
+                        Text("\(result.budgetMonths)").foregroundStyle(.secondary)
                     }
                 }
-                if !sheetNames.isEmpty {
+                if !result.sheetNames.isEmpty {
                     HStack {
                         Text("Sheets processed")
                         Spacer()
-                        Text("\(sheetNames.count)")
-                            .foregroundStyle(.secondary)
+                        Text("\(result.sheetNames.count)").foregroundStyle(.secondary)
                     }
                 }
                 if result.skipped > 0 {
                     HStack {
                         Text("Rows skipped")
                         Spacer()
-                        Text("\(result.skipped)")
-                            .foregroundStyle(.secondary)
+                        Text("\(result.skipped)").foregroundStyle(.secondary)
                     }
                 }
             }
@@ -202,9 +190,8 @@ struct MacImportResultView: View {
     private var skippedTab: some View {
         List {
             Section("Skipped rows") {
-                ForEach(skippedRows, id: \.self) { row in
-                    Text(row)
-                        .font(.caption)
+                ForEach(result.skippedRows, id: \.self) { row in
+                    Text(row).font(.caption)
                 }
             }
         }

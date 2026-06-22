@@ -1,6 +1,20 @@
 import Foundation
 import SwiftData
 
+/// A month-end snapshot of investment balances across accounts.
+///
+/// One row per `(month, year)`. Created on demand by
+/// `PortfolioStore.snapshotForMonth`. Free-text `notes` store any commentary for
+/// the month. The `PortfolioRow` view-model in `PortfolioStore` derives display
+/// values (totals, net worth) from a snapshot paired with an optional
+/// `DebtSnapshot` for the same month.
+///
+/// Fields:
+/// - `ssIsa`: Stocks & Shares ISA balance
+/// - `cashIsa`: Cash ISA balance
+/// - `lisa`: Lifetime ISA balance
+/// - `crypto`: Crypto holdings value
+/// - `pension`: Pension balance (excluded from `totalExPension` in `PortfolioRow`)
 @Model
 final public class PortfolioSnapshot {
     public var id: UUID
@@ -33,31 +47,5 @@ final public class PortfolioSnapshot {
         self.crypto = crypto
         self.pension = pension
         self.notes = notes
-    }
-}
-
-@Model
-final public class DebtSnapshot {
-    public var id: UUID
-    public var month: Int
-    public var year: Int
-    public var chase: Decimal
-    public var amex: Decimal
-    public var other: Decimal
-
-    public init(
-        id: UUID = UUID(),
-        month: Int,
-        year: Int,
-        chase: Decimal = 0,
-        amex: Decimal = 0,
-        other: Decimal = 0
-    ) {
-        self.id = id
-        self.month = month
-        self.year = year
-        self.chase = chase
-        self.amex = amex
-        self.other = other
     }
 }

@@ -2,6 +2,10 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+/// The "Portfolio" analytics view: a net-worth card with month-over-month delta,
+/// an investments card, a debts card, an allocation bar, optional notes, and a
+/// history list of all recorded snapshots. A toolbar button opens
+/// `MacPortfolioEditView` to add or edit the selected month's snapshot.
 struct MacPortfolioView: View {
     @Environment(\.modelContext) private var modelContext
 
@@ -17,13 +21,11 @@ struct MacPortfolioView: View {
     @State private var editState: PortfolioEditState?
 
     private var currentRow: PortfolioRow? {
-        let allRows = PortfolioStore.allRows(portfolios: portfolios, debts: debts)
-        return allRows.first { $0.portfolio.month == month && $0.portfolio.year == year }
+        allRows.first { $0.portfolio.month == month && $0.portfolio.year == year }
     }
 
     private var previousRow: PortfolioRow? {
-        let allRows = PortfolioStore.allRows(portfolios: portfolios, debts: debts)
-        return allRows.first { $0.portfolio.year < year || ($0.portfolio.year == year && $0.portfolio.month < month) }
+        allRows.first { $0.portfolio.year < year || ($0.portfolio.year == year && $0.portfolio.month < month) }
     }
 
     private var allRows: [PortfolioRow] {
@@ -51,8 +53,12 @@ struct MacPortfolioView: View {
                         historyCard
                     }
                 } else {
-                    ContentUnavailableView("No data for \(monthName(month, year))", systemImage: "chart.line.uptrend.xyaxis", description: Text("Tap + to add a snapshot"))
-                        .frame(maxWidth: .infinity)
+                    ContentUnavailableView(
+                        "No data for \(DateFormatting.monthYear(month: month, year: year))",
+                        systemImage: "chart.line.uptrend.xyaxis",
+                        description: Text("Tap + to add a snapshot")
+                    )
+                    .frame(maxWidth: .infinity)
                 }
             }
             .padding(20)
@@ -154,7 +160,9 @@ struct MacPortfolioView: View {
 
                 Divider()
 
-                totalRow("Debt Total", value: row.debtTotal, delta: previousRow.flatMap { pr in pr.debt.map { PortfolioStore.delta(current: row.debtTotal, previous: $0.chase + $0.amex + $0.other) } }, isDebt: true)
+                totalRow("Debt Total", value: row.debtTotal,
+                         delta: previousRow.flatMap { pr in pr.debt.map { PortfolioStore.delta(current: row.debtTotal, previous: $0.chase + $0.amex + $0.other) } },
+                         isDebt: true)
             } else {
                 ContentUnavailableView("No debts", systemImage: "checkmark.circle.fill", description: Text("Looking good!"))
                     .frame(maxWidth: .infinity)
@@ -187,7 +195,7 @@ struct MacPortfolioView: View {
                 GeometryReader { geo in
                     HStack(spacing: 2) {
                         ForEach(items, id: \.0) { item in
-                            let width = geo.size.width * CGFloat(truncating: NSDecimalNumber(decimal: item.1 / total))
+                            let width = geo.size.width * (item.1 / total).cgFloatValue
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(item.2)
                                 .frame(width: max(width, 4))
@@ -208,7 +216,7 @@ struct MacPortfolioView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
-                            Text(String(format: "%.1f%%", NSDecimalNumber(decimal: item.1 / total * 100).doubleValue))
+                            Text(String(format: "%.1f%%", (item.1 / total * 100).doubleValue))
                                 .font(.caption)
                                 .monospacedDigit()
                                 .fontWeight(.medium)
@@ -250,9 +258,7 @@ struct MacPortfolioView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            ForEach(allRows) { row in
-                historyRow(row)
-            }
+            ForEach(allRows) { historyRow($0) }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -263,7 +269,7 @@ struct MacPortfolioView: View {
     private func historyRow(_ row: PortfolioRow) -> some View {
         let isCurrent = row.portfolio.month == month && row.portfolio.year == year
         let maxNet: Decimal = allRows.map(\.netGrandWorth).map(abs).max() ?? 1
-        let pct = CGFloat(truncating: NSDecimalNumber(decimal: abs(row.netGrandWorth) / max(maxNet, 1)))
+        let pct = (abs(row.netGrandWorth) / max(maxNet, 1)).cgFloatValue
 
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -341,14 +347,6 @@ struct MacPortfolioView: View {
                 }
             }
         }
-    }
-
-    private func monthName(_ month: Int, _ year: Int) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: year, month: month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
-        return fmt.string(from: date)
     }
 }
 

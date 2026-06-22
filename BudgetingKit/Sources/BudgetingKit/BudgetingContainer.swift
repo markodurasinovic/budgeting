@@ -1,93 +1,67 @@
 import Foundation
 import SwiftData
 
+/// Entry point for creating the app's `ModelContainer` (the SwiftData database
+/// connection) and a seedable in-memory container for SwiftUI previews.
 public enum BudgetingContainer {
-    public static let appGroupIdentifier = "group.com.markodurasinovic.budgeting"
+    /// The set of persisted model types. Declared once so the real container and
+    /// the preview container stay in sync when models are added or removed.
+    private static let schema = Schema([
+        Entry.self,
+        Tag.self,
+        MonthlyBudget.self,
+        PortfolioSnapshot.self,
+        DebtSnapshot.self,
+    ])
 
+    /// Creates the on-disk `ModelContainer` used by the running app.
+    ///
+    /// On a corrupt-store error the existing `.sqlite`/`.sqlite-wal`/`.sqlite-shm`
+    /// files are removed and a fresh container is created. This is a last-resort
+    /// recovery so a bad database doesn't permanently block launch — but it does
+    /// discard data, which is acceptable for this local-only app. If the rebuild
+    /// also fails, `fatalError` reports the cause rather than crashing silently
+    /// (the previous `try!` gave no diagnostic).
+    ///
+    /// `@MainActor` because `assignTagColors` touches the container's main
+    /// context, which is main-actor-isolated.
     @MainActor
     public static func makeModelContainer() -> ModelContainer {
-        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self, PortfolioSnapshot.self, DebtSnapshot.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .none, cloudKitDatabase: .none)
+        let config = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            groupContainer: .none,
+            cloudKitDatabase: .none
+        )
 
         do {
             let container = try ModelContainer(for: schema, configurations: [config])
             BudgetStore.assignTagColors(in: container.mainContext)
             return container
         } catch {
-            let url = config.url
-            let dbUrls = [
-                url,
-                url.deletingPathExtension().appendingPathExtension("sqlite-wal"),
-                url.deletingPathExtension().appendingPathExtension("sqlite-shm")
-            ]
-            for dbUrl in dbUrls {
-                try? FileManager.default.removeItem(at: dbUrl)
+            removeStoreFiles(at: config.url)
+            do {
+                let container = try ModelContainer(for: schema, configurations: [config])
+                BudgetStore.assignTagColors(in: container.mainContext)
+                return container
+            } catch {
+                fatalError("Could not create ModelContainer after wiping store at \(config.url): \(error)")
             }
-            let container = try! ModelContainer(for: schema, configurations: [config])
-            BudgetStore.assignTagColors(in: container.mainContext)
-            return container
         }
     }
 
-    public static func writeWidgetData(context: ModelContext) {
-        let suiteDefaults = UserDefaults(suiteName: appGroupIdentifier)
-        guard let defaults = suiteDefaults else { return }
-
-        let now = Date()
-        let calendar = Calendar.current
-        let month = calendar.component(.month, from: now)
-        let year = calendar.component(.year, from: now)
-
-        let budget = BudgetStore.budgetForMonth(month, year: year, context: context)
-
-        let entryDescriptor = FetchDescriptor<Entry>()
-        let allEntries = (try? context.fetch(entryDescriptor)) ?? []
-        let monthEntries = BudgetStore.entriesForMonth(allEntries, month: month, year: year)
-        let expenses = monthEntries.reduce(Decimal(0)) { $0 + $1.amount }
-
-        let remainder = BudgetStore.remainder(
-            income: budget.income,
-            expenses: expenses,
-            bills: budget.bills,
-            savings: budget.savings,
-            investment: budget.investment
-        )
-
-        let totalDays = BudgetStore.daysInMonth(month: month, year: year)
-        let daysElapsed = BudgetStore.daysElapsedInMonth(month: month, year: year)
-        let daysRemaining = max(totalDays - daysElapsed, 0)
-        let dailyBudget = daysRemaining > 0 ? remainder / Decimal(daysRemaining) : Decimal(0)
-
-        let hasData = budget.income > 0 || !monthEntries.isEmpty
-
-        defaults.set(NSDecimalNumber(decimal: remainder).doubleValue, forKey: "widget_remainder")
-        defaults.set(NSDecimalNumber(decimal: dailyBudget).doubleValue, forKey: "widget_dailyBudget")
-        defaults.set(NSDecimalNumber(decimal: budget.income).doubleValue, forKey: "widget_income")
-        defaults.set(NSDecimalNumber(decimal: budget.bills).doubleValue, forKey: "widget_bills")
-        defaults.set(NSDecimalNumber(decimal: expenses).doubleValue, forKey: "widget_expenses")
-        defaults.set(NSDecimalNumber(decimal: budget.savings).doubleValue, forKey: "widget_savings")
-        defaults.set(NSDecimalNumber(decimal: budget.investment).doubleValue, forKey: "widget_investment")
-        defaults.set(daysRemaining, forKey: "widget_daysRemaining")
-        defaults.set(daysElapsed, forKey: "widget_daysElapsed")
-        defaults.set(totalDays, forKey: "widget_totalDays")
-        defaults.set(hasData, forKey: "widget_hasData")
-        defaults.set(month, forKey: "widget_month")
-        defaults.set(year, forKey: "widget_year")
-    }
-
+    /// Creates an in-memory `ModelContainer` preloaded with sample tags, entries,
+    /// and a budget for the current month. Used by `#Preview` blocks in views so
+    /// Xcode canvas renders with realistic data.
     @MainActor
     public static func makePreviewContainer() -> ModelContainer {
-        let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self, PortfolioSnapshot.self, DebtSnapshot.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try! ModelContainer(for: schema, configurations: [config])
 
         let context = container.mainContext
-        let food = Tag(name: "Food", colorHex: "#FF6B35")
-        let rent = Tag(name: "Rent", colorHex: "#4ECDC4")
-        let salary = Tag(name: "Salary", colorHex: "#45B7D1")
-        context.insert(food)
-        context.insert(rent)
-        context.insert(salary)
+        context.insert(Tag(name: "Food", colorHex: "#FF6B35"))
+        context.insert(Tag(name: "Rent", colorHex: "#4ECDC4"))
+        context.insert(Tag(name: "Salary", colorHex: "#45B7D1"))
 
         let now = Date()
         context.insert(Entry(date: now, item: "Groceries", tag: "Food", amount: Decimal(string: "45.50")!))
@@ -98,9 +72,26 @@ public enum BudgetingContainer {
         let calendar = Calendar.current
         let month = calendar.component(.month, from: now)
         let year = calendar.component(.year, from: now)
-        let budget = MonthlyBudget(month: month, year: year, income: Decimal(string: "3500")!, savings: Decimal(string: "500")!, investment: Decimal(string: "200")!)
-        context.insert(budget)
+        context.insert(MonthlyBudget(
+            month: month, year: year,
+            income: Decimal(string: "3500")!,
+            savings: Decimal(string: "500")!,
+            investment: Decimal(string: "200")!
+        ))
 
         return container
+    }
+
+    /// Removes the SQLite store files at `url` plus its `-wal` and `-shm`
+    /// sidecars. Failures are ignored (best-effort cleanup before a rebuild).
+    private static func removeStoreFiles(at url: URL) {
+        let urls = [
+            url,
+            url.deletingPathExtension().appendingPathExtension("sqlite-wal"),
+            url.deletingPathExtension().appendingPathExtension("sqlite-shm"),
+        ]
+        for fileURL in urls {
+            try? FileManager.default.removeItem(at: fileURL)
+        }
     }
 }

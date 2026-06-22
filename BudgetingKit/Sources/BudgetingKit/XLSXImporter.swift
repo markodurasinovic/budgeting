@@ -2,229 +2,117 @@ import Foundation
 import SwiftData
 import CoreXLSX
 
+/// Imports entries and budget fields from XLSX (Excel) workbooks.
+///
+/// All sheets in a workbook are processed. The shared row-classification logic
+/// lives in `ImporterCore`; this file only owns the CoreXLSX cell-reading code
+/// that turns a worksheet into rows of strings.
 public enum XLSXImporter {
-    public struct ImportResult {
-        public let imported: Int
-        public let skipped: Int
-        public let budgetMonths: Int
-        public let errors: [String]
-        public let skippedRows: [String]
-        public let sheetNames: [String]
-
-        public init(imported: Int, skipped: Int, budgetMonths: Int, errors: [String], skippedRows: [String] = [], sheetNames: [String] = []) {
-            self.imported = imported
-            self.skipped = skipped
-            self.budgetMonths = budgetMonths
-            self.errors = errors
-            self.skippedRows = skippedRows
-            self.sheetNames = sheetNames
-        }
-    }
-
+    /// Imports entries and budget fields from XLSX `data` into `context`.
+    /// Returns a summary including the names of every sheet processed.
     public static func importEntries(from data: Data, context: ModelContext) -> ImportResult {
         let file: XLSXFile
         do {
             file = try XLSXFile(data: data)
         } catch {
-            return ImportResult(imported: 0, skipped: 0, budgetMonths: 0, errors: ["Failed to open XLSX: \(error.localizedDescription)"], skippedRows: [])
+            return ImportResult(
+                imported: 0, skipped: 0, budgetMonths: 0,
+                errors: ["Failed to open XLSX: \(error.localizedDescription)"]
+            )
         }
 
-        var totalImported = 0
-        var totalSkipped = 0
-        var totalBudgetMonths = 0
-        var allErrors: [String] = []
-        var allSkippedRows: [String] = []
-        var sheetNames: [String] = []
-        var processedBudgets: [String: MonthlyBudget] = [:]
-        var budgetFieldsSet: [String: Set<String>] = [:]
-
-        let categoryKeywords: Set<String> = [
-            "pub", "takeaway", "eating out", "groceries", "entertainment",
-            "clothes", "train", "uber", "sport", "coffee",
-            "holiday", "shopping"
-        ]
-        let budgetKeywords: Set<String> = ["income", "savings", "investment", "bills"]
-        let budgetSkipKeywords: Set<String> = ["total spending", "subtotal", "remainder", "misc", "i+s"]
-        let shoppingNames: Set<String> = ["sainsburys", "lidl", "coop", "waitrose", "tesco", "m&s", "aldi"]
+        var accumulator = ImportAccumulator()
 
         do {
-            let wbk = try file.parseWorkbooks().first!
-            let paths = try file.parseWorksheetPathsAndNames(workbook: wbk)
-            let sharedStrings: SharedStrings = try! file.parseSharedStrings()!
+            guard let workbook = try file.parseWorkbooks().first else {
+                return ImportResult(
+                    imported: 0, skipped: 0, budgetMonths: 0,
+                    errors: ["Workbook not found in XLSX file"]
+                )
+            }
+            let paths = try file.parseWorksheetPathsAndNames(workbook: workbook)
+            let sharedStrings = try file.parseSharedStrings()
 
             for (name, path) in paths {
                 let sheetLabel = name ?? path
-                sheetNames.append(sheetLabel)
+                accumulator.sheetNames.append(sheetLabel)
 
                 let worksheet = try file.parseWorksheet(at: path)
                 let rows = worksheet.data?.rows ?? []
                 guard !rows.isEmpty else { continue }
 
-                // Build column-name-to-cell mapping per row
-                // First pass: collect dynamic categories from col E
-                var dynamicCategories: Set<String> = []
-                for row in rows {
-                    if let cell = row.cells.first(where: { $0.reference.column.value == "E" }) {
-                        if let val = cellStringValue(cell, sharedStrings: sharedStrings)?.trimmingCharacters(in: .whitespaces), !val.isEmpty {
-                            dynamicCategories.insert(val.lowercased())
-                        }
-                    }
+                // First pass: collect dynamic category names from column E.
+                let columnE = rows.compactMap { row -> String? in
+                    guard let cell = row.cells.first(where: { $0.reference.column.value == "E" }) else { return nil }
+                    return cellStringValue(cell, sharedStrings: sharedStrings)
                 }
-                let allCategories = categoryKeywords.union(dynamicCategories)
+                let allCategories = ImporterCore.categoryKeywords
+                    .union(ImporterCore.collectDynamicCategories(columnE))
 
                 for row in rows {
-                    let colA = cellInRow(row, column: "A")
-                    let colB = cellInRow(row, column: "B")
-                    let colC = cellInRow(row, column: "C")
-                    let colH = cellInRow(row, column: "H")
-                    let colI = cellInRow(row, column: "I")
-
-                    let dateStr = colA.flatMap { cellStringValue($0, sharedStrings: sharedStrings) }?.trimmingCharacters(in: .whitespaces) ?? ""
-                    guard !dateStr.isEmpty, let date = parseDate(dateStr) else { continue }
+                    let dateStr = cellInRow(row, column: "A")
+                        .flatMap { cellStringValue($0, sharedStrings: sharedStrings) }?
+                        .trimmingCharacters(in: .whitespaces) ?? ""
+                    guard let date = ImporterCore.parseDate(dateStr, supportsExcelSerial: true) else { continue }
                     let month = Calendar.current.component(.month, from: date)
                     let year = Calendar.current.component(.year, from: date)
-                    let budgetKey = "\(year)-\(month)"
+                    accumulator.ensureBudget(month: month, year: year, context: context)
 
-                    if processedBudgets[budgetKey] == nil {
-                        processedBudgets[budgetKey] = BudgetStore.budgetForMonth(month, year: year, context: context)
-                        budgetFieldsSet[budgetKey] = []
-                    }
+                    // Columns A-C: Date, Item, Price.
+                    let itemText = cellInRow(row, column: "B")
+                        .flatMap { cellStringValue($0, sharedStrings: sharedStrings) } ?? ""
+                    let priceText = cellInRow(row, column: "C")
+                        .flatMap { cellStringValue($0, sharedStrings: sharedStrings) } ?? ""
+                    ImporterCore.applyRow(
+                        rawItemText: itemText,
+                        priceText: priceText,
+                        date: date,
+                        allCategories: allCategories,
+                        context: context,
+                        accumulator: &accumulator,
+                        rowLabel: sheetLabel
+                    )
 
-                    // Columns A-C: Date, Item, Price
-                    let itemText = colB.flatMap { cellStringValue($0, sharedStrings: sharedStrings) }?.trimmingCharacters(in: .whitespaces) ?? ""
-                    let priceText = colC.flatMap { cellStringValue($0, sharedStrings: sharedStrings) } ?? ""
-
-                    if !itemText.isEmpty && !priceText.isEmpty {
-                        let lower01 = itemText.lowercased()
-                        var (parsedItem, parenTag) = CSVImporter.parseItemAndTag(itemText)
-                        let lowerParsed = parsedItem.lowercased()
-
-                        if allCategories.contains(lowerParsed) && parenTag != nil {
-                            parsedItem = parenTag!
-                            parenTag = lowerParsed.capitalized
-                        }
-
-                        let lowerFinalItem = parsedItem.lowercased()
-                        let priceAmount = parseAmount(priceText)
-
-                        if budgetKeywords.contains(lower01) {
-                            if let amount = priceAmount, let budget = processedBudgets[budgetKey] {
-                                applyBudgetKeywordOnce(lower01, amount: amount, to: budget, budgetKey: budgetKey, fieldsSet: &budgetFieldsSet)
-                            }
-                            allSkippedRows.append("[\(sheetLabel)] Budget: \(itemText) — \(priceText)")
-                        } else if budgetSkipKeywords.contains(lower01) {
-                            totalSkipped += 1
-                            allSkippedRows.append("[\(sheetLabel)] Skipped: \(itemText) — \(priceText)")
-                        } else if allCategories.contains(lowerFinalItem) && parenTag == nil {
-                            if let amount = priceAmount {
-                                BudgetStore.addEntry(date: date, item: parsedItem, tag: lowerFinalItem.capitalized, amount: amount, context: context)
-                                totalImported += 1
-                            }
-                        } else if shoppingNames.contains(lowerFinalItem) && parenTag == nil {
-                            if let amount = priceAmount {
-                                BudgetStore.addEntry(date: date, item: parsedItem, tag: "Shopping", amount: amount, context: context)
-                                totalImported += 1
-                            }
-                        } else {
-                            if let amount = priceAmount {
-                                BudgetStore.addEntry(date: date, item: parsedItem, tag: parenTag, amount: amount, context: context)
-                                totalImported += 1
-                            }
-                        }
-                    }
-
-                    // Columns H-I: Only Income
-                    let incomeItem = colH.flatMap { cellStringValue($0, sharedStrings: sharedStrings) }?.trimmingCharacters(in: .whitespaces) ?? ""
-                    let incomePrice = colI.flatMap { cellStringValue($0, sharedStrings: sharedStrings) } ?? ""
-
-                    if !incomeItem.isEmpty && !incomePrice.isEmpty {
-                        let lowerH = incomeItem.lowercased()
-                        if lowerH == "income" {
-                            if let amount = parseAmount(incomePrice), let budget = processedBudgets[budgetKey] {
-                                applyBudgetKeywordOnce(lowerH, amount: amount, to: budget, budgetKey: budgetKey, fieldsSet: &budgetFieldsSet)
-                            }
-                        }
-                    }
+                    // Columns H-I: only Income is read here.
+                    let incomeItem = cellInRow(row, column: "H")
+                        .flatMap { cellStringValue($0, sharedStrings: sharedStrings) } ?? ""
+                    let incomePrice = cellInRow(row, column: "I")
+                        .flatMap { cellStringValue($0, sharedStrings: sharedStrings) } ?? ""
+                    ImporterCore.applyIncomeRow(
+                        incomeItem: incomeItem,
+                        incomePrice: incomePrice,
+                        date: date,
+                        context: context,
+                        accumulator: &accumulator
+                    )
                 }
             }
         } catch {
-            return ImportResult(imported: 0, skipped: 0, budgetMonths: 0, errors: ["Failed to parse XLSX: \(error.localizedDescription)"], skippedRows: [])
+            return ImportResult(
+                imported: 0, skipped: 0, budgetMonths: 0,
+                errors: ["Failed to parse XLSX: \(error.localizedDescription)"]
+            )
         }
 
-        totalBudgetMonths = processedBudgets.count
-
-        return ImportResult(
-            imported: totalImported,
-            skipped: totalSkipped,
-            budgetMonths: totalBudgetMonths,
-            errors: allErrors,
-            skippedRows: allSkippedRows,
-            sheetNames: sheetNames
-        )
+        return accumulator.result()
     }
 
+    // MARK: - CoreXLSX cell helpers
+
+    /// Returns the cell in `row` for `column` ("A", "B", …), if present.
     private static func cellInRow(_ row: CoreXLSX.Row, column: String) -> Cell? {
         row.cells.first { $0.reference.column.value == column }
     }
 
-    private static func cellStringValue(_ cell: Cell, sharedStrings: SharedStrings) -> String? {
-        if let s = cell.stringValue(sharedStrings) {
+    /// Reads a cell's display string, trying shared strings, a direct value, and
+    /// an inline string in turn.
+    private static func cellStringValue(_ cell: Cell, sharedStrings: SharedStrings?) -> String? {
+        if let sharedStrings, let s = cell.stringValue(sharedStrings) {
             return s
         }
         if let v = cell.value {
             return v
         }
         return cell.inlineString?.text
-    }
-
-    private static func applyBudgetKeywordOnce(_ keyword: String, amount: Decimal, to budget: MonthlyBudget, budgetKey: String, fieldsSet: inout [String: Set<String>]) {
-        guard var set = fieldsSet[budgetKey] else { return }
-        guard !set.contains(keyword) else { return }
-        set.insert(keyword)
-        fieldsSet[budgetKey] = set
-
-        switch keyword {
-        case "income":
-            budget.income = amount
-        case "savings":
-            budget.savings = amount
-        case "investment":
-            budget.investment = amount
-        case "bills":
-            budget.bills = amount
-        default:
-            break
-        }
-    }
-
-    private static func parseAmount(_ input: String) -> Decimal? {
-        let cleaned = input
-            .trimmingCharacters(in: .whitespaces)
-            .replacingOccurrences(of: "£", with: "")
-            .replacingOccurrences(of: ",", with: "")
-        guard !cleaned.isEmpty else { return nil }
-        return Decimal(string: cleaned, locale: Locale(identifier: "en_US"))
-    }
-
-    private static func parseDate(_ input: String) -> Date? {
-        let trimmed = input.trimmingCharacters(in: .whitespaces)
-
-        // Excel serial date number (e.g. 46266 = Sep 1, 2026)
-        if let serial = Double(trimmed) {
-            let excelEpoch = Date(timeIntervalSince1970: -2209161600) // Dec 30, 1899
-            return excelEpoch.addingTimeInterval(serial * 86400)
-        }
-
-        let formats = ["M/d/yyyy", "dd/MM/yyyy", "yyyy-MM-dd", "M/d/yy"]
-        for fmt in formats {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = fmt
-            if let date = formatter.date(from: trimmed) {
-                return date
-            }
-        }
-
-        return nil
     }
 }

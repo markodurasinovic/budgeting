@@ -19,6 +19,7 @@
 		B4B448EFFF0D6E561265A737 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2460562699D846F50E836A3B /* Assets.xcassets */; };
 		B7E078164B70690DFBB39D90 /* MacAddEditEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF08DE6C1F126EE560279D0 /* MacAddEditEntryView.swift */; };
 		C273AC21D9ED804922CE8E1D /* MacCSVImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */; };
+		C359B4DF02F77C59B75A23D3 /* SidebarSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE16785C5EA511EC63FBE0A /* SidebarSelection.swift */; };
 		CA3BBA244D9282EF6779C3CA /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B1155C313FB35EF79EB0518 /* DetailView.swift */; };
 		CBD9714C1CB77AFB070F97B0 /* BudgetingWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D55681AC72E8407B0CA15CF /* BudgetingWidgetBundle.swift */; };
 		D3BB25CE70C9D101BAA91AA6 /* MainContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24E16DF2D63BBF523143EE /* MainContentView.swift */; };
@@ -63,6 +64,7 @@
 		9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPortfolioView.swift; sourceTree = "<group>"; };
 		9D55681AC72E8407B0CA15CF /* BudgetingWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetingWidgetBundle.swift; sourceTree = "<group>"; };
 		B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacBudgetEditView.swift; sourceTree = "<group>"; };
+		BBE16785C5EA511EC63FBE0A /* SidebarSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarSelection.swift; sourceTree = "<group>"; };
 		C98C01A14D34CC3BF0F93BE5 /* BudgetingWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BudgetingWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCSVImportView.swift; sourceTree = "<group>"; };
 		DB7917EAE710448A687379AB /* BudgetingMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BudgetingMac.entitlements; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 				5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */,
 				9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */,
 				8D24E16DF2D63BBF523143EE /* MainContentView.swift */,
+				BBE16785C5EA511EC63FBE0A /* SidebarSelection.swift */,
 				DD03CB9002058DA0807FD145 /* SidebarView.swift */,
 			);
 			path = Views;
@@ -278,6 +281,7 @@
 				35CF7710C055C9C717CD1D20 /* MacPortfolioEditView.swift in Sources */,
 				42663F39A41BD165DCF6C13A /* MacPortfolioView.swift in Sources */,
 				D3BB25CE70C9D101BAA91AA6 /* MainContentView.swift in Sources */,
+				C359B4DF02F77C59B75A23D3 /* SidebarSelection.swift in Sources */,
 				2349019BF055D7E625C8606D /* SidebarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

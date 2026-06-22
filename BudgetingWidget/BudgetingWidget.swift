@@ -1,6 +1,10 @@
 import WidgetKit
 import SwiftUI
+import BudgetingKit
 
+/// Timeline entry rendered by the widget. All numeric fields are `Double`/`Int`
+/// because they're read from `UserDefaults` (which doesn't store `Decimal`).
+/// `date` is required by `TimelineEntry` and is set by the timeline provider.
 struct BudgetEntry: TimelineEntry {
     let date: Date
     let remainder: Double
@@ -16,12 +20,33 @@ struct BudgetEntry: TimelineEntry {
     let hasData: Bool
     let month: Int
     let year: Int
-}
 
-struct BudgetTimelineProvider: TimelineProvider {
-    private let appGroupIdentifier = "group.com.markodurasinovic.budgeting"
+    /// Builds an entry from a `WidgetData.Snapshot` (read from shared
+    /// UserDefaults) plus the `date` the timeline wants to render at. A static
+    /// factory rather than an `init` so the synthesized memberwise initializer
+    /// stays available for the `#Preview` below.
+    static func make(date: Date, snapshot: WidgetData.Snapshot) -> BudgetEntry {
+        BudgetEntry(
+            date: date,
+            remainder: snapshot.remainder,
+            dailyBudget: snapshot.dailyBudget,
+            income: snapshot.income,
+            bills: snapshot.bills,
+            expenses: snapshot.expenses,
+            savings: snapshot.savings,
+            investment: snapshot.investment,
+            daysRemaining: snapshot.daysRemaining,
+            daysElapsed: snapshot.daysElapsed,
+            totalDays: snapshot.totalDays,
+            hasData: snapshot.hasData,
+            month: snapshot.month,
+            year: snapshot.year
+        )
+    }
 
-    func placeholder(in context: Context) -> BudgetEntry {
+    /// A placeholder entry with zeroed values, used by WidgetKit before real
+    /// data is available and as a fallback when no snapshot exists.
+    static var placeholder: BudgetEntry {
         BudgetEntry(
             date: Date(),
             remainder: 0, dailyBudget: 0,
@@ -33,42 +58,35 @@ struct BudgetTimelineProvider: TimelineProvider {
             year: Calendar.current.component(.year, from: Date())
         )
     }
+}
+
+/// Provides the widget's timeline by reading the snapshot written by the app
+/// via `WidgetData`. Refreshes are requested every 4 hours; the app also
+/// triggers an immediate refresh after any entry/budget change.
+struct BudgetTimelineProvider: TimelineProvider {
+    func placeholder(in context: Context) -> BudgetEntry {
+        BudgetEntry.placeholder
+    }
 
     func getSnapshot(in context: Context, completion: @escaping (BudgetEntry) -> Void) {
-        completion(loadFromDefaults() ?? placeholder(in: context))
+        completion(currentEntry() ?? .placeholder)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<BudgetEntry>) -> Void) {
-        let entry = loadFromDefaults() ?? placeholder(in: context)
-        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 4, to: Date()) ?? Date().addingTimeInterval(14400)
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-        completion(timeline)
+        let entry = currentEntry() ?? .placeholder
+        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 4, to: Date())
+            ?? Date().addingTimeInterval(14400)
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 
-    private func loadFromDefaults() -> BudgetEntry? {
-        guard let defaults = UserDefaults(suiteName: appGroupIdentifier) else { return nil }
-        guard defaults.bool(forKey: "widget_hasData") else { return nil }
-
-        let now = Date()
-        return BudgetEntry(
-            date: now,
-            remainder: defaults.double(forKey: "widget_remainder"),
-            dailyBudget: defaults.double(forKey: "widget_dailyBudget"),
-            income: defaults.double(forKey: "widget_income"),
-            bills: defaults.double(forKey: "widget_bills"),
-            expenses: defaults.double(forKey: "widget_expenses"),
-            savings: defaults.double(forKey: "widget_savings"),
-            investment: defaults.double(forKey: "widget_investment"),
-            daysRemaining: defaults.integer(forKey: "widget_daysRemaining"),
-            daysElapsed: defaults.integer(forKey: "widget_daysElapsed"),
-            totalDays: defaults.integer(forKey: "widget_totalDays"),
-            hasData: defaults.bool(forKey: "widget_hasData"),
-            month: defaults.integer(forKey: "widget_month"),
-            year: defaults.integer(forKey: "widget_year")
-        )
+    /// Reads the latest snapshot and wraps it in an entry dated `now`.
+    private func currentEntry() -> BudgetEntry? {
+        guard let snapshot = WidgetData.read() else { return nil }
+        return BudgetEntry.make(date: Date(), snapshot: snapshot)
     }
 }
 
+/// The widget registration: small, medium, and large system sizes.
 struct BudgetingWidget: Widget {
     let kind: String = "BudgetingWidget"
 
@@ -85,24 +103,22 @@ struct BudgetingWidget: Widget {
     }
 }
 
+/// Routes each widget family to its sized view.
 struct BudgetingWidgetEntryView: View {
     let entry: BudgetEntry
-
-    @Environment(\.widgetFamily) var family
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
         switch family {
-        case .systemSmall:
-            SmallWidgetView(entry: entry)
-        case .systemMedium:
-            MediumWidgetView(entry: entry)
-        case .systemLarge:
-            LargeWidgetView(entry: entry)
-        default:
-            SmallWidgetView(entry: entry)
+        case .systemSmall:  SmallWidgetView(entry: entry)
+        case .systemMedium: MediumWidgetView(entry: entry)
+        case .systemLarge:  LargeWidgetView(entry: entry)
+        default:            SmallWidgetView(entry: entry)
         }
     }
 }
+
+// MARK: - Small
 
 private struct SmallWidgetView: View {
     let entry: BudgetEntry
@@ -143,24 +159,12 @@ private struct SmallWidgetView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
         } else {
-            VStack(spacing: 8) {
-                Image(systemName: "tray")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-                Text("Set up your budget")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Link(destination: URL(string: "budgeting://open")!) {
-                    Text("Open App")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
+            emptyState(message: "Set up your budget", buttonText: "Open App")
         }
     }
 }
+
+// MARK: - Medium
 
 private struct MediumWidgetView: View {
     let entry: BudgetEntry
@@ -211,21 +215,7 @@ private struct MediumWidgetView: View {
             }
             .padding()
         } else {
-            VStack(spacing: 8) {
-                Image(systemName: "tray")
-                    .font(.title)
-                    .foregroundStyle(.secondary)
-                Text("Set up your budget in the app")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Link(destination: URL(string: "budgeting://open")!) {
-                    Text("Open Budgeting")
-                        .font(.callout)
-                        .fontWeight(.medium)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
+            emptyState(message: "Set up your budget in the app", buttonText: "Open Budgeting", titleIcon: .title)
         }
     }
 
@@ -247,9 +237,12 @@ private struct MediumWidgetView: View {
     }
 }
 
+// MARK: - Large
+
 private struct LargeWidgetView: View {
     let entry: BudgetEntry
 
+    /// Fraction of income already spent on bills + expenses, clamped to 0...1.
     private var budgetUsed: Double {
         guard entry.income > 0 else { return 0 }
         let spent = entry.bills + entry.expenses
@@ -295,7 +288,7 @@ private struct LargeWidgetView: View {
                             .fill(Color(nsColor: .quaternaryLabelColor).opacity(0.5))
                         RoundedRectangle(cornerRadius: 4)
                             .fill(entry.remainder >= 0 ? Color.green : Color.red)
-                            .frame(width: geo.size.width * CGFloat(max(0, min(1, budgetUsed))))
+                            .frame(width: geo.size.width * max(0, min(1, budgetUsed)))
                     }
                 }
                 .frame(height: 8)
@@ -313,21 +306,7 @@ private struct LargeWidgetView: View {
             }
             .padding()
         } else {
-            VStack(spacing: 8) {
-                Image(systemName: "tray")
-                    .font(.title)
-                    .foregroundStyle(.secondary)
-                Text("Set up your budget in the app")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Link(destination: URL(string: "budgeting://open")!) {
-                    Text("Open Budgeting")
-                        .font(.callout)
-                        .fontWeight(.medium)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
+            emptyState(message: "Set up your budget in the app", buttonText: "Open Budgeting", titleIcon: .title)
         }
     }
 
@@ -353,6 +332,45 @@ private struct LargeWidgetView: View {
     }
 }
 
+// MARK: - Shared
+
+/// The "no data yet" placeholder shown by every size before the app writes its
+/// first snapshot. `titleIcon` sizes the tray icon up for the medium/large sizes.
+private struct EmptyWidgetView: View {
+    let message: String
+    let buttonText: String
+    let titleIcon: Font
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "tray")
+                .font(titleIcon)
+                .foregroundStyle(.secondary)
+            Text(message)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Link(destination: URL(string: "budgeting://open")!) {
+                Text(buttonText)
+                    .font(.callout)
+                    .fontWeight(.medium)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+}
+
+private extension View {
+    /// Shorthand for the empty-state used across all three widget sizes.
+    func emptyState(message: String, buttonText: String, titleIcon: Font = .title2) -> some View {
+        EmptyWidgetView(message: message, buttonText: buttonText, titleIcon: titleIcon)
+    }
+}
+
+/// Formats a `Double` as a GBP currency string with a leading `£` and a `-` for
+/// negatives. Lives in the widget (not in `MoneyHelper`) because the widget works
+/// with `Double` values read from `UserDefaults`, whereas `MoneyHelper` works
+/// with `Decimal`.
 private func formatMoney(_ value: Double) -> String {
     let formatter = NumberFormatter()
     formatter.numberStyle = .currency

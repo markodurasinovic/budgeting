@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 import BudgetingKit
 
+/// The navigation sidebar: month navigation, the fixed view filters
+/// (All Entries, Categories, Portfolio, Daily Spend), and the list of tags
+/// present in the selected month.
 struct SidebarView: View {
     @Query(sort: [SortDescriptor(\Entry.date, order: .reverse)])
     private var entries: [Entry]
@@ -10,19 +13,14 @@ struct SidebarView: View {
     private var tags: [Tag]
 
     @Binding var selectedMonth: Date
-    @Binding var selectedTag: String?
+    @Binding var selection: SidebarSelection?
 
     private var monthName: String {
         selectedMonth.formatted(.dateTime.year().month(.wide))
     }
 
-    private var month: Int {
-        Calendar.current.component(.month, from: selectedMonth)
-    }
-
-    private var year: Int {
-        Calendar.current.component(.year, from: selectedMonth)
-    }
+    private var month: Int { Calendar.current.component(.month, from: selectedMonth) }
+    private var year: Int { Calendar.current.component(.year, from: selectedMonth) }
 
     private var monthEntries: [Entry] {
         BudgetStore.entriesForMonth(entries, month: month, year: year)
@@ -42,16 +40,16 @@ struct SidebarView: View {
     }
 
     var body: some View {
-        List(selection: $selectedTag) {
+        List(selection: $selection) {
             Section("Filter") {
                 Label("All Entries", systemImage: "list.bullet")
-                    .tag("___ALL___" as String)
+                    .tag(SidebarSelection.allEntries)
                 Label("Categories", systemImage: "chart.bar.fill")
-                    .tag("___CATEGORIES___" as String)
+                    .tag(SidebarSelection.categories)
                 Label("Portfolio", systemImage: "chart.line.uptrend.xyaxis")
-                    .tag("___PORTFOLIO___" as String)
+                    .tag(SidebarSelection.portfolio)
                 Label("Daily Spend", systemImage: "calendar")
-                    .tag("___DAILY___" as String)
+                    .tag(SidebarSelection.dailySpend)
             }
 
             Section("Months") {
@@ -66,10 +64,7 @@ struct SidebarView: View {
                     .buttonStyle(.borderless)
 
                     Spacer()
-
-                    Text(monthName)
-                        .font(.headline)
-
+                    Text(monthName).font(.headline)
                     Spacer()
 
                     Button {
@@ -83,10 +78,8 @@ struct SidebarView: View {
 
                     Spacer()
 
-                    Button("Today") {
-                        selectedMonth = Date()
-                    }
-                    .buttonStyle(.borderless)
+                    Button("Today") { selectedMonth = Date() }
+                        .buttonStyle(.borderless)
                 }
             }
 
@@ -104,7 +97,7 @@ struct SidebarView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        .tag(tagName as String)
+                        .tag(SidebarSelection.tag(tagName))
                     }
                 }
             }
@@ -115,6 +108,6 @@ struct SidebarView: View {
 }
 
 #Preview {
-    SidebarView(selectedMonth: .constant(Date()), selectedTag: .constant(nil))
+    SidebarView(selectedMonth: .constant(Date()), selection: .constant(.allEntries))
         .modelContainer(BudgetingContainer.makePreviewContainer())
 }
