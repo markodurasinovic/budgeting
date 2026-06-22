@@ -11,26 +11,59 @@
 		187574CC891A561D7D53F46C /* BudgetingMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3911D631FF0617E2A0F711 /* BudgetingMacApp.swift */; };
 		2349019BF055D7E625C8606D /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD03CB9002058DA0807FD145 /* SidebarView.swift */; };
 		281E84731A23F8E9B93D4EB8 /* MacDailySpendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 535FD80DE9E6985EF69A8B49 /* MacDailySpendView.swift */; };
+		2D82515817B70383D1AD2753 /* BudgetingKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8B8035BED2B856B6BF137D9B /* BudgetingKit */; };
 		35CF7710C055C9C717CD1D20 /* MacPortfolioEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */; };
 		42663F39A41BD165DCF6C13A /* MacPortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */; };
+		4B1461101394E8A72026505D /* BudgetingWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C98C01A14D34CC3BF0F93BE5 /* BudgetingWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A0CC91EA6CAB23F3374535F8 /* BudgetingWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124B4131AAB2460299AA170A /* BudgetingWidget.swift */; };
 		B4B448EFFF0D6E561265A737 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2460562699D846F50E836A3B /* Assets.xcassets */; };
 		B7E078164B70690DFBB39D90 /* MacAddEditEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF08DE6C1F126EE560279D0 /* MacAddEditEntryView.swift */; };
 		C273AC21D9ED804922CE8E1D /* MacCSVImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */; };
 		CA3BBA244D9282EF6779C3CA /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B1155C313FB35EF79EB0518 /* DetailView.swift */; };
+		CBD9714C1CB77AFB070F97B0 /* BudgetingWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D55681AC72E8407B0CA15CF /* BudgetingWidgetBundle.swift */; };
 		D3BB25CE70C9D101BAA91AA6 /* MainContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24E16DF2D63BBF523143EE /* MainContentView.swift */; };
 		E9E6C44DF1803FCC58BD4C1C /* MacCategoryBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F58617A3D68874CE190BC897 /* MacCategoryBreakdownView.swift */; };
 		EF00609925AF1803455C9D2B /* MacBudgetEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0C2190317DC2A3B67C08149C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 206248265EB33644FE69F54A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B66374DA69A7C500925ECE82;
+			remoteInfo = BudgetingWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A68EE0A8CC3C012C52568C06 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4B1461101394E8A72026505D /* BudgetingWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		07A1619FCFC811514707D01D /* BudgetingWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BudgetingWidget.entitlements; sourceTree = "<group>"; };
+		124B4131AAB2460299AA170A /* BudgetingWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetingWidget.swift; sourceTree = "<group>"; };
 		2460562699D846F50E836A3B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		27A7931F98791FECC15A7007 /* BudgetingKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = BudgetingKit; path = BudgetingKit; sourceTree = SOURCE_ROOT; };
 		2B1155C313FB35EF79EB0518 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 		535FD80DE9E6985EF69A8B49 /* MacDailySpendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDailySpendView.swift; sourceTree = "<group>"; };
 		5502AA1C2DFAE4A9C86E938C /* MacPortfolioEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPortfolioEditView.swift; sourceTree = "<group>"; };
+		71F2A57AB47D106A3439376D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8D24E16DF2D63BBF523143EE /* MainContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainContentView.swift; sourceTree = "<group>"; };
 		9A434A3F5B77B6C04CEFDCD8 /* MacPortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPortfolioView.swift; sourceTree = "<group>"; };
+		9D55681AC72E8407B0CA15CF /* BudgetingWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetingWidgetBundle.swift; sourceTree = "<group>"; };
 		B06B8FD3524054285BC871D8 /* MacBudgetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacBudgetEditView.swift; sourceTree = "<group>"; };
+		C98C01A14D34CC3BF0F93BE5 /* BudgetingWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BudgetingWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2BA10BF39323809D0F0103C /* MacCSVImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCSVImportView.swift; sourceTree = "<group>"; };
 		DB7917EAE710448A687379AB /* BudgetingMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BudgetingMac.entitlements; sourceTree = "<group>"; };
 		DBBF15C614400F603C70DDAB /* BudgetingMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BudgetingMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -46,6 +79,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				071444FEC453B8EF967FA9AA /* BudgetingKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55DE81345463204975D7B7C4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D82515817B70383D1AD2753 /* BudgetingKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -69,6 +110,16 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		5671C5D072B1E08E39CC44A0 /* BudgetingWidget */ = {
+			isa = PBXGroup;
+			children = (
+				07A1619FCFC811514707D01D /* BudgetingWidget.entitlements */,
+				124B4131AAB2460299AA170A /* BudgetingWidget.swift */,
+				9D55681AC72E8407B0CA15CF /* BudgetingWidgetBundle.swift */,
+			);
+			path = BudgetingWidget;
+			sourceTree = "<group>";
+		};
 		738E4785DA0A301259C653C9 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -81,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				DBBF15C614400F603C70DDAB /* BudgetingMac.app */,
+				C98C01A14D34CC3BF0F93BE5 /* BudgetingWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -89,6 +141,7 @@
 			isa = PBXGroup;
 			children = (
 				C55795A145799802DDB58DD1 /* BudgetingMac */,
+				5671C5D072B1E08E39CC44A0 /* BudgetingWidget */,
 				738E4785DA0A301259C653C9 /* Packages */,
 				7DDAE0F569B743F18A521001 /* Products */,
 			);
@@ -100,6 +153,7 @@
 				2460562699D846F50E836A3B /* Assets.xcassets */,
 				DB7917EAE710448A687379AB /* BudgetingMac.entitlements */,
 				EA3911D631FF0617E2A0F711 /* BudgetingMacApp.swift */,
+				71F2A57AB47D106A3439376D /* Info.plist */,
 				1FE570732B4154CDFB775092 /* Views */,
 			);
 			path = BudgetingMac;
@@ -115,10 +169,12 @@
 				FF537831D5B25D9A5407B49D /* Sources */,
 				C981E090514DDAF4ECB18953 /* Resources */,
 				05FFA14D854159B86A5A0475 /* Frameworks */,
+				A68EE0A8CC3C012C52568C06 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F83CAEDF64E62621723D9FFA /* PBXTargetDependency */,
 			);
 			name = BudgetingMac;
 			packageProductDependencies = (
@@ -127,6 +183,25 @@
 			productName = BudgetingMac;
 			productReference = DBBF15C614400F603C70DDAB /* BudgetingMac.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B66374DA69A7C500925ECE82 /* BudgetingWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 043F786CBC80A7E8CC08AE51 /* Build configuration list for PBXNativeTarget "BudgetingWidget" */;
+			buildPhases = (
+				9D039015AE4EDEFD6AC6C351 /* Sources */,
+				55DE81345463204975D7B7C4 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BudgetingWidget;
+			packageProductDependencies = (
+				8B8035BED2B856B6BF137D9B /* BudgetingKit */,
+			);
+			productName = BudgetingWidget;
+			productReference = C98C01A14D34CC3BF0F93BE5 /* BudgetingWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -138,6 +213,9 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					A467A1BFA48C5E700037F799 = {
+						ProvisioningStyle = Automatic;
+					};
+					B66374DA69A7C500925ECE82 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -160,6 +238,7 @@
 			projectRoot = "";
 			targets = (
 				A467A1BFA48C5E700037F799 /* BudgetingMac */,
+				B66374DA69A7C500925ECE82 /* BudgetingWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -176,6 +255,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		9D039015AE4EDEFD6AC6C351 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0CC91EA6CAB23F3374535F8 /* BudgetingWidget.swift in Sources */,
+				CBD9714C1CB77AFB070F97B0 /* BudgetingWidgetBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FF537831D5B25D9A5407B49D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -195,6 +283,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F83CAEDF64E62621723D9FFA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B66374DA69A7C500925ECE82 /* BudgetingWidget */;
+			targetProxy = 0C2190317DC2A3B67C08149C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0665017F1B2EB1EF4B3F5850 /* Release */ = {
@@ -264,6 +360,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BudgetingMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -275,6 +372,28 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
 			name = Release;
+		};
+		90DC765811DAA1A1E7D9DE3E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
+				CODE_SIGN_ENTITLEMENTS = BudgetingWidget/BudgetingWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.markodurasinovic.Budgeting.Widget;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
 		};
 		B5C18978BC469EAD411B1F5E /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -350,6 +469,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BudgetingMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -362,9 +482,40 @@
 			};
 			name = Debug;
 		};
+		F7D6B01FE568A42FD695BC5B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
+				CODE_SIGN_ENTITLEMENTS = BudgetingWidget/BudgetingWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.markodurasinovic.Budgeting.Widget;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		043F786CBC80A7E8CC08AE51 /* Build configuration list for PBXNativeTarget "BudgetingWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90DC765811DAA1A1E7D9DE3E /* Debug */,
+				F7D6B01FE568A42FD695BC5B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		471A7650F4A6FF68E1F7F569 /* Build configuration list for PBXProject "Budgeting" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -394,6 +545,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		69EC1C6B98EC98DCEA14361B /* BudgetingKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BudgetingKit;
+		};
+		8B8035BED2B856B6BF137D9B /* BudgetingKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = BudgetingKit;
 		};

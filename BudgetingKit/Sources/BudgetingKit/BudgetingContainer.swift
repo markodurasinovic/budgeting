@@ -2,6 +2,8 @@ import Foundation
 import SwiftData
 
 public enum BudgetingContainer {
+    public static let appGroupIdentifier = "group.com.markodurasinovic.budgeting"
+
     @MainActor
     public static func makeModelContainer() -> ModelContainer {
         let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self, PortfolioSnapshot.self, DebtSnapshot.self])
@@ -25,6 +27,52 @@ public enum BudgetingContainer {
             BudgetStore.assignTagColors(in: container.mainContext)
             return container
         }
+    }
+
+    public static func writeWidgetData(context: ModelContext) {
+        let suiteDefaults = UserDefaults(suiteName: appGroupIdentifier)
+        guard let defaults = suiteDefaults else { return }
+
+        let now = Date()
+        let calendar = Calendar.current
+        let month = calendar.component(.month, from: now)
+        let year = calendar.component(.year, from: now)
+
+        let budget = BudgetStore.budgetForMonth(month, year: year, context: context)
+
+        let entryDescriptor = FetchDescriptor<Entry>()
+        let allEntries = (try? context.fetch(entryDescriptor)) ?? []
+        let monthEntries = BudgetStore.entriesForMonth(allEntries, month: month, year: year)
+        let expenses = monthEntries.reduce(Decimal(0)) { $0 + $1.amount }
+
+        let remainder = BudgetStore.remainder(
+            income: budget.income,
+            expenses: expenses,
+            bills: budget.bills,
+            savings: budget.savings,
+            investment: budget.investment
+        )
+
+        let totalDays = BudgetStore.daysInMonth(month: month, year: year)
+        let daysElapsed = BudgetStore.daysElapsedInMonth(month: month, year: year)
+        let daysRemaining = max(totalDays - daysElapsed, 0)
+        let dailyBudget = daysRemaining > 0 ? remainder / Decimal(daysRemaining) : Decimal(0)
+
+        let hasData = budget.income > 0 || !monthEntries.isEmpty
+
+        defaults.set(NSDecimalNumber(decimal: remainder).doubleValue, forKey: "widget_remainder")
+        defaults.set(NSDecimalNumber(decimal: dailyBudget).doubleValue, forKey: "widget_dailyBudget")
+        defaults.set(NSDecimalNumber(decimal: budget.income).doubleValue, forKey: "widget_income")
+        defaults.set(NSDecimalNumber(decimal: budget.bills).doubleValue, forKey: "widget_bills")
+        defaults.set(NSDecimalNumber(decimal: expenses).doubleValue, forKey: "widget_expenses")
+        defaults.set(NSDecimalNumber(decimal: budget.savings).doubleValue, forKey: "widget_savings")
+        defaults.set(NSDecimalNumber(decimal: budget.investment).doubleValue, forKey: "widget_investment")
+        defaults.set(daysRemaining, forKey: "widget_daysRemaining")
+        defaults.set(daysElapsed, forKey: "widget_daysElapsed")
+        defaults.set(totalDays, forKey: "widget_totalDays")
+        defaults.set(hasData, forKey: "widget_hasData")
+        defaults.set(month, forKey: "widget_month")
+        defaults.set(year, forKey: "widget_year")
     }
 
     @MainActor

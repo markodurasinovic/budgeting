@@ -21,7 +21,6 @@ xcodebuild \
     -derivedDataPath "${BUILD_DIR}" \
     CODE_SIGN_IDENTITY="-" \
     CODE_SIGNING_REQUIRED=NO \
-    CODE_SIGNING_ALLOWED=NO \
     build \
     | tail -5
 
@@ -37,6 +36,9 @@ rm -rf "${INSTALL_PATH}"
 
 echo "Installing to ${INSTALL_PATH}..."
 cp -R "${APP_PATH}" "${INSTALL_PATH}"
+
+echo "Signing app bundle..."
+codesign --force --deep --sign - "${INSTALL_PATH}"
 
 echo "Removing quarantine attribute..."
 xattr -cr "${INSTALL_PATH}"

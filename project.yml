@@ -10,6 +10,19 @@ packages:
   BudgetingKit:
     path: ./BudgetingKit
 
+schemes:
+  BudgetingMac:
+    build:
+      targets:
+        BudgetingMac: all
+        BudgetingWidget: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
+
 targets:
   BudgetingMac:
     type: application
@@ -18,8 +31,16 @@ targets:
       - path: BudgetingMac
     dependencies:
       - package: BudgetingKit
+      - target: BudgetingWidget
     entitlements:
       path: BudgetingMac/BudgetingMac.entitlements
+    info:
+      path: BudgetingMac/Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLName: Budgeting URL Scheme
+            CFBundleURLSchemes:
+              - budgeting
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.markodurasinovic.Budgeting.Mac
@@ -31,6 +52,30 @@ targets:
         CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+
+  BudgetingWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: BudgetingWidget
+    dependencies:
+      - package: BudgetingKit
+    entitlements:
+      path: BudgetingWidget/BudgetingWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.markodurasinovic.Budgeting.Widget
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
       configs:
         Debug:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
