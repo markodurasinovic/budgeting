@@ -11,9 +11,6 @@ struct MacDailySpendView: View {
     @Query(sort: [SortDescriptor(\Entry.date, order: .reverse), SortDescriptor(\Entry.item)])
     private var entries: [Entry]
 
-    @Query(sort: [SortDescriptor(\MonthlyBudget.year), SortDescriptor(\MonthlyBudget.month)])
-    private var budgets: [MonthlyBudget]
-
     let month: Int
     let year: Int
 

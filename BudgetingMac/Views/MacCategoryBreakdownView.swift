@@ -13,9 +13,6 @@ struct MacCategoryBreakdownView: View {
     @Query(sort: [SortDescriptor(\Tag.name)])
     private var tags: [Tag]
 
-    @Query(sort: [SortDescriptor(\MonthlyBudget.year), SortDescriptor(\MonthlyBudget.month)])
-    private var budgets: [MonthlyBudget]
-
     let month: Int
     let year: Int
 

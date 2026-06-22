@@ -132,7 +132,9 @@ public enum BudgetStore {
         }
     }
 
-    /// Per-tag totals for the given month, sorted by descending absolute total.
+    /// Per-tag totals for the given month, sorted by descending total (so the
+    /// biggest spending categories appear first). Callers that need absolute-value
+    /// sorting re-sort the result — see `DetailView.tagTotalsByAbs`.
     public static func totalsByTagForMonth(_ entries: [Entry], month: Int, year: Int) -> [(tag: String, total: Decimal)] {
         let monthEntries = entriesForMonth(entries, month: month, year: year)
         var totals: [String: Decimal] = [:]

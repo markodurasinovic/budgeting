@@ -22,7 +22,6 @@ struct MacAddEditEntryView: View {
 
     @State private var date: Date
     @State private var rows: [EntryRow] = [EntryRow()]
-    @State private var editingEntry: Entry?
     @State private var editingItem = ""
     @State private var editingTag = ""
     @State private var editingAmountText = ""
@@ -42,7 +41,6 @@ struct MacAddEditEntryView: View {
             _rows = State(initialValue: [EntryRow()])
         case .edit(let entry):
             _date = State(initialValue: entry.date)
-            _editingEntry = State(initialValue: entry)
             _editingItem = State(initialValue: entry.item)
             _editingTag = State(initialValue: entry.tag)
             _editingAmountText = State(initialValue: MoneyHelper.formatPlain(entry.amount))

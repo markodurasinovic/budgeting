@@ -79,13 +79,21 @@ public enum TagPalette {
 
     /// Returns a stable hex color for `name`. The hash is computed from the
     /// lowercased, sorted characters of the name so it is independent of letter
-    /// case and unaffected by Swift's per-launch hash randomization.
+    /// case and unaffected by Swift's per-launch hash randomization. The hash
+    /// uses wrapping arithmetic (`&*`/`&+`) so it can produce any `Int` value;
+    /// the modulo-by-palette-size step is careful to avoid the `abs(Int.min)`
+    /// trap by using signed-safe arithmetic.
     public static func hex(for name: String) -> String {
         let sorted = name.lowercased().sorted()
         var hash = 0
         for ch in sorted {
             hash = (hash &* 31) &+ Int(ch.asciiValue ?? 0)
         }
-        return color(at: abs(hash))
+        // Use signed-safe modulo to avoid abs(Int.min) trapping. Adding
+        // colors.count before the second modulo maps negative values into range
+        // without calling abs().
+        let count = colors.count
+        let index = ((hash % count) + count) % count
+        return colors[index]
     }
 }
