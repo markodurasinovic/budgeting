@@ -159,7 +159,7 @@ private struct SmallWidgetView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
         } else {
-            emptyState(message: "Set up your budget", buttonText: "Open App")
+            EmptyWidgetView(message: "Set up your budget", buttonText: "Open App")
         }
     }
 }
@@ -215,7 +215,7 @@ private struct MediumWidgetView: View {
             }
             .padding()
         } else {
-            emptyState(message: "Set up your budget in the app", buttonText: "Open Budgeting", titleIcon: .title)
+            EmptyWidgetView(message: "Set up your budget in the app", buttonText: "Open Budgeting", titleIcon: .title)
         }
     }
 
@@ -306,7 +306,7 @@ private struct LargeWidgetView: View {
             }
             .padding()
         } else {
-            emptyState(message: "Set up your budget in the app", buttonText: "Open Budgeting", titleIcon: .title)
+            EmptyWidgetView(message: "Set up your budget in the app", buttonText: "Open Budgeting", titleIcon: .title)
         }
     }
 
@@ -339,7 +339,7 @@ private struct LargeWidgetView: View {
 private struct EmptyWidgetView: View {
     let message: String
     let buttonText: String
-    let titleIcon: Font
+    var titleIcon: Font = .title2
 
     var body: some View {
         VStack(spacing: 8) {
@@ -357,13 +357,6 @@ private struct EmptyWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
-    }
-}
-
-private extension View {
-    /// Shorthand for the empty-state used across all three widget sizes.
-    func emptyState(message: String, buttonText: String, titleIcon: Font = .title2) -> some View {
-        EmptyWidgetView(message: message, buttonText: buttonText, titleIcon: titleIcon)
     }
 }
 

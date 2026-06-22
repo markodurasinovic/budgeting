@@ -125,6 +125,16 @@ struct MoneyHelperExpressionTests {
         #expect(MoneyHelper.parse("-5 + 3") == Decimal(-2))
     }
 
+    @Test("Leading negative with subtraction")
+    func leadingNegativeSubtraction() {
+        #expect(MoneyHelper.parse("-5 - 3") == Decimal(-8))
+    }
+
+    @Test("Subtraction without spaces")
+    func subtractionNoSpaces() {
+        #expect(MoneyHelper.parse("10-2") == Decimal(8))
+    }
+
     @Test("Division by zero returns nil")
     func divisionByZero() {
         #expect(MoneyHelper.parse("1 / 0") == nil)

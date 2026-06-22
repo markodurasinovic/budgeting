@@ -62,15 +62,12 @@ public enum MoneyHelper {
 
         guard !cleaned.isEmpty else { return nil }
 
-        // Detect an expression: any operator/paren character, or a '-' that
-        // isn't the leading sign. We must check before trying `Decimal(string:)`
-        // because it parses a leading numeric prefix and ignores the rest, so
-        // "12.50 + 3.75" would otherwise be read as "12.50".
-        let firstDash = cleaned.firstIndex(of: "-")
-        let isExpression = cleaned.contains { c in
-            "+*/()".contains(c)
-                || (c == "-" && firstDash != cleaned.startIndex)
-        }
+        // Detect an expression: any operator/paren character. We must check
+        // before trying `Decimal(string:)` because it parses a leading numeric
+        // prefix and ignores the rest, so "12.50 + 3.75" would otherwise be
+        // read as "12.50". A leading `-` or `+` is also an operator (unary),
+        // but the expression parser handles those correctly too.
+        let isExpression = cleaned.contains { c in "+-*/()".contains(c) }
 
         if isExpression {
             return ExpressionEvaluator.evaluate(cleaned)

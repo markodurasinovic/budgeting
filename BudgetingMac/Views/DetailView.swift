@@ -46,10 +46,6 @@ struct DetailView: View {
         return BudgetStore.searchEntries(tagged, query: searchText)
     }
 
-    private var total: Decimal {
-        filteredEntries.reduce(Decimal(0)) { $0 + $1.amount }
-    }
-
     private var currentBudget: MonthlyBudget {
         BudgetStore.budgetForMonth(month, year: year, context: modelContext)
     }

@@ -120,8 +120,8 @@ public enum ImporterCore {
 
         // If the item name is itself a known category and carries a parenthetical
         // tag, swap them: "Train (tfl)" -> item="Tfl", tag="Train".
-        if allCategories.contains(lowerParsed), parenTag != nil {
-            parsedItem = parenTag!
+        if allCategories.contains(lowerParsed), let tag = parenTag {
+            parsedItem = tag
             parenTag = lowerParsed.capitalized
         }
 
