@@ -51,7 +51,7 @@ struct MacDailySpendView: View {
     }
 
     private var daysRemaining: Int {
-        max(totalDays - daysElapsed, 0)
+        BudgetStore.daysRemainingInMonth(month: month, year: year)
     }
 
     private var biggestDay: (day: Int, total: Decimal)? {

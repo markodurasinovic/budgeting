@@ -146,6 +146,22 @@ public enum BudgetStore {
         return daysInMonth(month: month, year: year)
     }
 
+    public static func daysRemainingInMonth(month: Int, year: Int) -> Int {
+        let now = Date()
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: now)
+        let currentYear = calendar.component(.year, from: now)
+        let totalDays = daysInMonth(month: month, year: year)
+        if month == currentMonth && year == currentYear {
+            let day = calendar.component(.day, from: now)
+            return max(totalDays - day + 1, 0)
+        }
+        if year < currentYear || (year == currentYear && month < currentMonth) {
+            return 0
+        }
+        return totalDays
+    }
+
     public static func averageDailySpend(_ entries: [Entry], month: Int, year: Int) -> Decimal {
         let daysElapsed = daysElapsedInMonth(month: month, year: year)
         guard daysElapsed > 0 else { return Decimal(0) }

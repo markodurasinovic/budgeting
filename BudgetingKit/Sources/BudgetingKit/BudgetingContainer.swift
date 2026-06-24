@@ -55,7 +55,7 @@ public enum BudgetingContainer {
 
         let totalDays = BudgetStore.daysInMonth(month: month, year: year)
         let daysElapsed = BudgetStore.daysElapsedInMonth(month: month, year: year)
-        let daysRemaining = max(totalDays - daysElapsed, 0)
+        let daysRemaining = BudgetStore.daysRemainingInMonth(month: month, year: year)
         let dailyBudget = daysRemaining > 0 ? remainder / Decimal(daysRemaining) : Decimal(0)
 
         let hasData = budget.income > 0 || !monthEntries.isEmpty

@@ -120,6 +120,64 @@ struct TagTests {
     }
 }
 
+@Suite("BudgetStore days")
+struct BudgetStoreDaysTests {
+    @Test("daysRemainingInMonth includes the current day")
+    func daysRemainingIncludesToday() {
+        let calendar = Calendar.current
+        let now = Date()
+        let month = calendar.component(.month, from: now)
+        let year = calendar.component(.year, from: now)
+        let day = calendar.component(.day, from: now)
+        let totalDays = BudgetStore.daysInMonth(month: month, year: year)
+
+        let remaining = BudgetStore.daysRemainingInMonth(month: month, year: year)
+        #expect(remaining == totalDays - day + 1)
+        #expect(remaining >= 1)
+    }
+
+    @Test("daysRemainingInMonth is zero for a past month")
+    func daysRemainingPastMonth() {
+        let calendar = Calendar.current
+        let now = Date()
+        let month = calendar.component(.month, from: now)
+        let year = calendar.component(.year, from: now)
+
+        let pastMonth: Int
+        let pastYear: Int
+        if month == 1 {
+            pastMonth = 12
+            pastYear = year - 1
+        } else {
+            pastMonth = month - 1
+            pastYear = year
+        }
+
+        #expect(BudgetStore.daysRemainingInMonth(month: pastMonth, year: pastYear) == 0)
+    }
+
+    @Test("daysRemainingInMonth counts all days for a future month")
+    func daysRemainingFutureMonth() {
+        let calendar = Calendar.current
+        let now = Date()
+        let month = calendar.component(.month, from: now)
+        let year = calendar.component(.year, from: now)
+
+        let futureMonth: Int
+        let futureYear: Int
+        if month == 12 {
+            futureMonth = 1
+            futureYear = year + 1
+        } else {
+            futureMonth = month + 1
+            futureYear = year
+        }
+
+        let total = BudgetStore.daysInMonth(month: futureMonth, year: futureYear)
+        #expect(BudgetStore.daysRemainingInMonth(month: futureMonth, year: futureYear) == total)
+    }
+}
+
 @Suite("CSVImporter")
 struct CSVImporterTests {
     @Test("Parse simple CSV rows")

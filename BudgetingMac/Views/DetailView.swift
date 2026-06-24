@@ -61,9 +61,7 @@ struct DetailView: View {
     }
 
     private var daysRemaining: Int {
-        let totalDays = BudgetStore.daysInMonth(month: month, year: year)
-        let elapsed = BudgetStore.daysElapsedInMonth(month: month, year: year)
-        return max(totalDays - elapsed, 0)
+        BudgetStore.daysRemainingInMonth(month: month, year: year)
     }
 
     private var savingsRateValue: Decimal? {
