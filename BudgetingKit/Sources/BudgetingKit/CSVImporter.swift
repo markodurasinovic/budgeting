@@ -240,28 +240,9 @@ public enum CSVImporter {
     }
 
     private static func parseDate(_ input: String) -> Date? {
-        let format1 = { (str: String) -> Date? in
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = "M/d/yyyy"
-            return formatter.date(from: str)
-        }
-
-        let format2 = { (str: String) -> Date? in
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = "dd/MM/yyyy"
-            return formatter.date(from: str)
-        }
-
-        let format3 = { (str: String) -> Date? in
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = "yyyy-MM-dd"
-            return formatter.date(from: str)
-        }
-
-        return format1(input) ?? format2(input) ?? format3(input)
+        Formatters.csvDateM_d_yyyy.date(from: input)
+            ?? Formatters.csvDateDD_MM_yyyy.date(from: input)
+            ?? Formatters.csvDateYYYY_MM_dd.date(from: input)
     }
 
     public static func parseItemAndTag(_ raw: String) -> (item: String, tag: String?) {

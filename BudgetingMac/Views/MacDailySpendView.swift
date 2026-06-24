@@ -13,50 +13,86 @@ struct MacDailySpendView: View {
     let month: Int
     let year: Int
 
-    private var dailyTotals: [(day: Int, total: Decimal)] {
-        BudgetStore.totalsByDayForMonth(entries, month: month, year: year)
+    struct Snapshot {
+        let dailyTotals: [(day: Int, total: Decimal)]
+        let maxDailyTotal: Decimal
+        let totalSpend: Decimal
+        let avgDailySpend: Decimal
+        let estimatedTotal: Decimal
+        let daysElapsed: Int
+        let daysRemaining: Int
+        let totalDays: Int
+        let currentBudget: MonthlyBudget
+        let remainder: Decimal
+        let biggestDay: (day: Int, total: Decimal)?
+        let topSpendingDays: [(day: Int, total: Decimal)]
+        let zeroDays: Int
     }
 
-    private var maxDailyTotal: Decimal {
-        dailyTotals.map(\.total).map(abs).max() ?? Decimal(0)
-    }
+    private var snapshot: Snapshot {
+        let cal = Calendar.current
+        let daysInMonth = BudgetStore.daysInMonth(month: month, year: year)
+        let now = Date()
+        let currentMonth = cal.component(.month, from: now)
+        let currentYear = cal.component(.year, from: now)
+        let isCurrentMonth = month == currentMonth && year == currentYear
 
-    private var totalSpend: Decimal {
-        dailyTotals.reduce(Decimal(0)) { $0 + $1.total }
-    }
+        var totalsByDay: [Int: Decimal] = [:]
+        for entry in entries {
+            let comps = cal.dateComponents([.month, .year, .day], from: entry.date)
+            if comps.month == month && comps.year == year, let day = comps.day {
+                totalsByDay[day, default: Decimal(0)] += entry.amount
+            }
+        }
+        let dailyTotals = (1...daysInMonth).map { day in
+            (day: day, total: totalsByDay[day] ?? Decimal(0))
+        }
 
-    private var avgDailySpend: Decimal {
-        BudgetStore.averageDailySpend(entries, month: month, year: year)
-    }
+        let maxDailyTotal = dailyTotals.map(\.total).map(abs).max() ?? Decimal(0)
+        let totalSpend = dailyTotals.reduce(Decimal(0)) { $0 + $1.total }
 
-    private var estimatedTotal: Decimal {
-        BudgetStore.estimatedMonthlySpend(entries, month: month, year: year)
-    }
+        let daysElapsed: Int
+        if isCurrentMonth {
+            daysElapsed = cal.component(.day, from: now)
+        } else {
+            daysElapsed = daysInMonth
+        }
+        let daysRemaining: Int
+        if isCurrentMonth {
+            daysRemaining = max(daysInMonth - daysElapsed + 1, 0)
+        } else if year < currentYear || (year == currentYear && month < currentMonth) {
+            daysRemaining = 0
+        } else {
+            daysRemaining = daysInMonth
+        }
 
-    private var daysElapsed: Int {
-        BudgetStore.daysElapsedInMonth(month: month, year: year)
-    }
+        let avgDailySpend = daysElapsed > 0 ? totalSpend / Decimal(daysElapsed) : Decimal(0)
+        let estimatedTotal = avgDailySpend * Decimal(daysInMonth)
 
-    private var totalDays: Int {
-        BudgetStore.daysInMonth(month: month, year: year)
-    }
+        let currentBudget = BudgetStore.budgetForMonth(month, year: year, context: modelContext)
+        let remainder = BudgetStore.remainder(income: currentBudget.income, expenses: totalSpend, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
 
-    private var currentBudget: MonthlyBudget {
-        BudgetStore.budgetForMonth(month, year: year, context: modelContext)
-    }
-
-    private var remainder: Decimal {
-        let expenses = BudgetStore.totalForMonth(entries, month: month, year: year)
-        return BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
-    }
-
-    private var daysRemaining: Int {
-        BudgetStore.daysRemainingInMonth(month: month, year: year)
-    }
-
-    private var biggestDay: (day: Int, total: Decimal)? {
         let pastDays = dailyTotals.filter { $0.day <= daysElapsed && $0.total != 0 }
-        return pastDays.max(by: { abs($0.total) < abs($1.total) })
+        let biggestDay = pastDays.max(by: { abs($0.total) < abs($1.total) })
+        let sortedByAmount = pastDays.sorted { abs($0.total) > abs($1.total) }
+        let topSpendingDays = Array(sortedByAmount.prefix(3))
+        let zeroDays = dailyTotals.filter { $0.day <= daysElapsed && $0.total == 0 }.count
+
+        return Snapshot(
+            dailyTotals: dailyTotals,
+            maxDailyTotal: maxDailyTotal,
+            totalSpend: totalSpend,
+            avgDailySpend: avgDailySpend,
+            estimatedTotal: estimatedTotal,
+            daysElapsed: daysElapsed,
+            daysRemaining: daysRemaining,
+            totalDays: daysInMonth,
+            currentBudget: currentBudget,
+            remainder: remainder,
+            biggestDay: biggestDay,
+            topSpendingDays: topSpendingDays,
+            zeroDays: zeroDays
+        )
     }
 
     private func spendColor(for amount: Decimal) -> Color {
@@ -66,49 +102,47 @@ struct MacDailySpendView: View {
         return .green
     }
 
-    private func barColor(for item: (day: Int, total: Decimal)) -> Color {
-        if item.day > daysElapsed || item.total == 0 {
+    private func barColor(for item: (day: Int, total: Decimal), snap: Snapshot) -> Color {
+        if item.day > snap.daysElapsed || item.total == 0 {
             return Color.gray.opacity(0.15)
         }
         return spendColor(for: item.total)
     }
 
     var body: some View {
-        ScrollView {
+        let snap = snapshot
+        return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                totalSpendCard
-
+                totalSpendCard(snap)
                 HStack(spacing: 16) {
-                    statsCard
-                    budgetTrackCard
+                    statsCard(snap)
+                    budgetTrackCard(snap)
                 }
-
-                spotlightCard
-
-                dailyBreakdownCard
+                spotlightCard(snap)
+                dailyBreakdownCard(snap)
             }
             .padding(20)
         }
         .navigationTitle("Daily Spend")
     }
 
-    private var totalSpendCard: some View {
+    private func totalSpendCard(_ snap: Snapshot) -> some View {
         VStack(spacing: 12) {
-            Text(monthName(month, year))
+            Text(Formatters.monthYearString(month: month, year: year))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .center)
 
-            Text(MoneyHelper.format(totalSpend))
+            Text(MoneyHelper.format(snap.totalSpend))
                 .font(.system(size: 36, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(totalSpend < 0 ? .red : .primary)
+                .foregroundStyle(snap.totalSpend < 0 ? .red : .primary)
 
             HStack(spacing: 24) {
-                Label("\(daysElapsed) of \(totalDays) days", systemImage: "calendar")
+                Label("\(snap.daysElapsed) of \(snap.totalDays) days", systemImage: "calendar")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Label("\(daysRemaining) remaining", systemImage: "hourglass")
+                Label("\(snap.daysRemaining) remaining", systemImage: "hourglass")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -120,22 +154,21 @@ struct MacDailySpendView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var statsCard: some View {
+    private func statsCard(_ snap: Snapshot) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Overview", systemImage: "chart.bar.fill")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            statRow("Avg per day", value: MoneyHelper.format(avgDailySpend), icon: "divide.circle.fill", color: spendColor(for: avgDailySpend))
-            statRow("Estimated total", value: MoneyHelper.format(estimatedTotal), icon: "arrow.forward.circle.fill", color: estimatedTotal < 0 ? .red : .orange)
+            statRow("Avg per day", value: MoneyHelper.format(snap.avgDailySpend), icon: "divide.circle.fill", color: spendColor(for: snap.avgDailySpend))
+            statRow("Estimated total", value: MoneyHelper.format(snap.estimatedTotal), icon: "arrow.forward.circle.fill", color: snap.estimatedTotal < 0 ? .red : .orange)
 
-            if let big = biggestDay {
+            if let big = snap.biggestDay {
                 statRow("Biggest day", value: "Day \(big.day) — \(MoneyHelper.format(big.total))", icon: "flame.fill", color: .red)
             }
 
-            let zeroDays = dailyTotals.filter { $0.day <= daysElapsed && $0.total == 0 }.count
-            statRow("Zero-spend days", value: "\(zeroDays)", icon: "leaf.fill", color: .green)
+            statRow("Zero-spend days", value: "\(snap.zeroDays)", icon: "leaf.fill", color: .green)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -143,11 +176,11 @@ struct MacDailySpendView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var budgetTrackCard: some View {
-        let spent = abs(BudgetStore.totalForMonth(entries, month: month, year: year))
-        let budget = currentBudget.income - currentBudget.bills - currentBudget.savings - currentBudget.investment
+    private func budgetTrackCard(_ snap: Snapshot) -> some View {
+        let spent = abs(snap.totalSpend)
+        let budget = snap.currentBudget.income - snap.currentBudget.bills - snap.currentBudget.savings - snap.currentBudget.investment
         let budgetUsedPct = budget > 0 ? CGFloat(truncating: NSDecimalNumber(decimal: spent / budget * 100)) : CGFloat(0)
-        let dailyBudget = daysRemaining > 0 ? remainder / Decimal(daysRemaining) : Decimal(0)
+        let dailyBudget = snap.daysRemaining > 0 ? snap.remainder / Decimal(snap.daysRemaining) : Decimal(0)
 
         return VStack(alignment: .leading, spacing: 14) {
             Label("Budget", systemImage: "target")
@@ -155,7 +188,7 @@ struct MacDailySpendView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            budgetMetric("Remainder", value: remainder, color: remainder >= 0 ? .green : .red)
+            budgetMetric("Remainder", value: snap.remainder, color: snap.remainder >= 0 ? .green : .red)
             budgetMetric("Daily budget", value: dailyBudget, color: dailyBudget >= 0 ? .green : .red)
 
             if budget > 0 {
@@ -175,7 +208,7 @@ struct MacDailySpendView: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
-.fill(Color(nsColor: .quaternaryLabelColor))
+                                .fill(Color(nsColor: .quaternaryLabelColor))
                                 .frame(height: 10)
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(budgetUsedPct > 100 ? Color.red : Color.accentColor)
@@ -192,23 +225,19 @@ struct MacDailySpendView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var spotlightCard: some View {
-        let pastDays = dailyTotals.filter { $0.day <= daysElapsed }
-        let sortedByAmount = pastDays.filter { $0.total != 0 }.sorted { abs($0.total) > abs($1.total) }
-        let top3 = Array(sortedByAmount.prefix(3))
-
-        return VStack(alignment: .leading, spacing: 14) {
+    private func spotlightCard(_ snap: Snapshot) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             Label("Top Spending Days", systemImage: "flame.fill")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            if top3.isEmpty {
+            if snap.topSpendingDays.isEmpty {
                 Text("No spending yet this month")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             } else {
-                ForEach(top3, id: \.day) { item in
+                ForEach(snap.topSpendingDays, id: \.day) { item in
                     HStack(spacing: 10) {
                         Circle()
                             .fill(spendColor(for: item.total).opacity(0.2))
@@ -220,7 +249,7 @@ struct MacDailySpendView: View {
                             )
                             .frame(width: 28, height: 28)
 
-                        Text(dayName(item.day))
+                        Text(Formatters.shortDayString(day: item.day, month: month, year: year))
                             .font(.body)
                         Spacer()
                         Text(MoneyHelper.format(item.total))
@@ -238,15 +267,15 @@ struct MacDailySpendView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var dailyBreakdownCard: some View {
+    private func dailyBreakdownCard(_ snap: Snapshot) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Daily Breakdown", systemImage: "calendar.day.timeline.leading")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            ForEach(dailyTotals, id: \.day) { item in
-                dailyRow(item)
+            ForEach(snap.dailyTotals, id: \.day) { item in
+                dailyRow(item, snap: snap)
             }
         }
         .padding(16)
@@ -255,11 +284,11 @@ struct MacDailySpendView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func dailyRow(_ item: (day: Int, total: Decimal)) -> some View {
-        let isFuture = item.day > daysElapsed
+    private func dailyRow(_ item: (day: Int, total: Decimal), snap: Snapshot) -> some View {
+        let isFuture = item.day > snap.daysElapsed
         let isZero = item.total == 0
-        let isToday = item.day == daysElapsed
-        let color = barColor(for: item)
+        let isToday = item.day == snap.daysElapsed
+        let color = barColor(for: item, snap: snap)
 
         return HStack(spacing: 10) {
             ZStack {
@@ -282,7 +311,7 @@ struct MacDailySpendView: View {
                         .fill(Color(nsColor: .quaternaryLabelColor))
                     RoundedRectangle(cornerRadius: 3)
                         .fill(color)
-                        .frame(width: isZero || isFuture ? 0 : geo.size.width * min(1, CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / max(maxDailyTotal, Decimal(1))))))
+                        .frame(width: isZero || isFuture ? 0 : geo.size.width * min(1, CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / max(snap.maxDailyTotal, Decimal(1))))))
                 }
             }
             .frame(height: isToday ? 8 : 6)
@@ -331,22 +360,6 @@ struct MacDailySpendView: View {
                 .foregroundStyle(color)
         }
         .font(.body)
-    }
-
-    private func dayName(_ day: Int) -> String {
-        let components = DateComponents(year: year, month: month, day: day)
-        guard let date = Calendar.current.date(from: components) else { return "Day \(day)" }
-        let fmt = DateFormatter()
-        fmt.dateFormat = "EEE d"
-        return fmt.string(from: date)
-    }
-
-    private func monthName(_ month: Int, _ year: Int) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: year, month: month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
-        return fmt.string(from: date)
     }
 }
 

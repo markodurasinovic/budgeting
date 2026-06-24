@@ -16,29 +16,31 @@ struct MacPortfolioView: View {
 
     @State private var editState: PortfolioEditState?
 
-    private var currentRow: PortfolioRow? {
-        let allRows = PortfolioStore.allRows(portfolios: portfolios, debts: debts)
-        return allRows.first { $0.portfolio.month == month && $0.portfolio.year == year }
+    struct Snapshot {
+        let allRows: [PortfolioRow]
+        let currentRow: PortfolioRow?
+        let previousRow: PortfolioRow?
+        let maxNetWorth: Decimal
     }
 
-    private var previousRow: PortfolioRow? {
+    private var snapshot: Snapshot {
         let allRows = PortfolioStore.allRows(portfolios: portfolios, debts: debts)
-        return allRows.first { $0.portfolio.year < year || ($0.portfolio.year == year && $0.portfolio.month < month) }
-    }
-
-    private var allRows: [PortfolioRow] {
-        PortfolioStore.allRows(portfolios: portfolios, debts: debts)
+        let currentRow = allRows.first { $0.portfolio.month == month && $0.portfolio.year == year }
+        let previousRow = allRows.first { $0.portfolio.year < year || ($0.portfolio.year == year && $0.portfolio.month < month) }
+        let maxNet = allRows.map(\.netGrandWorth).map(abs).max() ?? Decimal(1)
+        return Snapshot(allRows: allRows, currentRow: currentRow, previousRow: previousRow, maxNetWorth: maxNet)
     }
 
     var body: some View {
-        ScrollView {
+        let snap = snapshot
+        return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if let row = currentRow {
-                    netWorthCard(row: row)
+                if let row = snap.currentRow {
+                    netWorthCard(row: row, snap: snap)
 
                     HStack(spacing: 16) {
-                        investmentCard(row: row)
-                        debtsCard(row: row)
+                        investmentCard(row: row, snap: snap)
+                        debtsCard(row: row, snap: snap)
                     }
 
                     allocationCard(row: row)
@@ -47,11 +49,11 @@ struct MacPortfolioView: View {
                         notesCard(notes: notes)
                     }
 
-                    if !allRows.isEmpty {
-                        historyCard
+                    if !snap.allRows.isEmpty {
+                        historyCard(snap)
                     }
                 } else {
-                    ContentUnavailableView("No data for \(monthName(month, year))", systemImage: "chart.line.uptrend.xyaxis", description: Text("Tap + to add a snapshot"))
+                    ContentUnavailableView("No data for \(Formatters.monthYearString(month: month, year: year))", systemImage: "chart.line.uptrend.xyaxis", description: Text("Tap + to add a snapshot"))
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -74,9 +76,9 @@ struct MacPortfolioView: View {
         }
     }
 
-    private func netWorthCard(row: PortfolioRow) -> some View {
-        let delta = previousRow.map { PortfolioStore.delta(current: row.netGrandWorth, previous: $0.netGrandWorth) }
-        let deltaPct = previousRow.map { PortfolioStore.deltaPercent(current: row.netGrandWorth, previous: $0.netGrandWorth) }
+    private func netWorthCard(row: PortfolioRow, snap: Snapshot) -> some View {
+        let delta = snap.previousRow.map { PortfolioStore.delta(current: row.netGrandWorth, previous: $0.netGrandWorth) }
+        let deltaPct = snap.previousRow.map { PortfolioStore.deltaPercent(current: row.netGrandWorth, previous: $0.netGrandWorth) }
         let isPositive = delta.map { $0 >= 0 } ?? true
 
         return VStack(spacing: 12) {
@@ -115,8 +117,8 @@ struct MacPortfolioView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func investmentCard(row: PortfolioRow) -> some View {
-        let delta = previousRow.map { PortfolioStore.delta(current: row.grandTotal, previous: $0.grandTotal) }
+    private func investmentCard(row: PortfolioRow, snap: Snapshot) -> some View {
+        let delta = snap.previousRow.map { PortfolioStore.delta(current: row.grandTotal, previous: $0.grandTotal) }
 
         return VStack(alignment: .leading, spacing: 14) {
             Label("Investments", systemImage: "chart.line.uptrend.xyaxis")
@@ -140,7 +142,7 @@ struct MacPortfolioView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func debtsCard(row: PortfolioRow) -> some View {
+    private func debtsCard(row: PortfolioRow, snap: Snapshot) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Debts", systemImage: "exclamationmark.triangle.fill")
                 .font(.subheadline)
@@ -154,7 +156,7 @@ struct MacPortfolioView: View {
 
                 Divider()
 
-                totalRow("Debt Total", value: row.debtTotal, delta: previousRow.flatMap { pr in pr.debt.map { PortfolioStore.delta(current: row.debtTotal, previous: $0.chase + $0.amex + $0.other) } }, isDebt: true)
+                totalRow("Debt Total", value: row.debtTotal, delta: snap.previousRow.flatMap { pr in pr.debt.map { PortfolioStore.delta(current: row.debtTotal, previous: $0.chase + $0.amex + $0.other) } }, isDebt: true)
             } else {
                 ContentUnavailableView("No debts", systemImage: "checkmark.circle.fill", description: Text("Looking good!"))
                     .frame(maxWidth: .infinity)
@@ -243,15 +245,15 @@ struct MacPortfolioView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var historyCard: some View {
+    private func historyCard(_ snap: Snapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("History", systemImage: "clock.arrow.circlepath")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            ForEach(allRows) { row in
-                historyRow(row)
+            ForEach(snap.allRows) { row in
+                historyRow(row, snap: snap)
             }
         }
         .padding(16)
@@ -260,10 +262,9 @@ struct MacPortfolioView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func historyRow(_ row: PortfolioRow) -> some View {
+    private func historyRow(_ row: PortfolioRow, snap: Snapshot) -> some View {
         let isCurrent = row.portfolio.month == month && row.portfolio.year == year
-        let maxNet: Decimal = allRows.map(\.netGrandWorth).map(abs).max() ?? 1
-        let pct = CGFloat(truncating: NSDecimalNumber(decimal: abs(row.netGrandWorth) / max(maxNet, 1)))
+        let pct = CGFloat(truncating: NSDecimalNumber(decimal: abs(row.netGrandWorth) / max(snap.maxNetWorth, 1)))
 
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -341,14 +342,6 @@ struct MacPortfolioView: View {
                 }
             }
         }
-    }
-
-    private func monthName(_ month: Int, _ year: Int) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: year, month: month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
-        return fmt.string(from: date)
     }
 }
 

@@ -2,6 +2,8 @@ import Foundation
 import JavaScriptCore
 
 public enum MoneyHelper {
+    private static let jsContext: JSContext? = JSContext()
+
     private static let formatter: NumberFormatter = {
         let f = NumberFormatter()
         f.numberStyle = .decimal
@@ -43,7 +45,7 @@ public enum MoneyHelper {
         guard expr.unicodeScalars.allSatisfy({ allowed.contains($0) }) else {
             return nil
         }
-        guard let context = JSContext() else { return nil }
+        guard let context = jsContext else { return nil }
         guard let result = context.evaluateScript(expr), result.isNumber else {
             return nil
         }

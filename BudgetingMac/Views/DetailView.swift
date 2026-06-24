@@ -23,9 +23,24 @@ struct DetailView: View {
     @State private var selectedEntries: Set<Entry.ID> = []
     @State private var showingBudgetEdit = false
 
+    struct Snapshot {
+        let filteredEntries: [Entry]
+        let monthEntries: [Entry]
+        let total: Decimal
+        let expenses: Decimal
+        let remainder: Decimal
+        let daysRemaining: Int
+        let savingsRate: Decimal?
+        let tagTotals: [(tag: String, total: Decimal)]
+        let currentBudget: MonthlyBudget
+        let runningTotal: Decimal
+        let previousRunningTotal: Decimal
+        let tagColors: [String: Color]
+    }
+
     private var selectedEntryDate: Date? {
         guard let firstID = selectedEntries.first else { return nil }
-        return filteredEntries.first(where: { $0.id == firstID })?.date
+        return snapshot.filteredEntries.first(where: { $0.id == firstID })?.date
     }
 
     private var effectiveTag: String? {
@@ -33,70 +48,105 @@ struct DetailView: View {
         return nil
     }
 
-    private var filteredEntries: [Entry] {
-        let monthEntries = BudgetStore.entriesForMonth(entries, month: month, year: year)
-        let tagged: [Entry]
-        if let tag = effectiveTag {
-            tagged = monthEntries.filter { $0.tag == tag }
-        } else {
-            tagged = monthEntries
+    private var snapshot: Snapshot {
+        let cal = Calendar.current
+        let effective = effectiveTag
+        let query = searchText
+        let lowerQuery = query.lowercased()
+
+        var monthExpenseMap: [Int: Decimal] = [:]
+        var monthEntries: [Entry] = []
+        var tagTotals: [String: Decimal] = [:]
+        var filtered: [Entry] = []
+
+        for e in entries {
+            let comps = cal.dateComponents([.month, .year], from: e.date)
+            let eMonth = comps.month ?? 0
+            let eYear = comps.year ?? 0
+            let key = eYear &* 100 &+ eMonth
+            monthExpenseMap[key, default: Decimal(0)] += e.amount
+
+            let isCurrentMonth = eMonth == month && eYear == year
+            guard isCurrentMonth else { continue }
+
+            monthEntries.append(e)
+            tagTotals[e.tag, default: Decimal(0)] += e.amount
+
+            let matchesTag: Bool
+            if let effective {
+                matchesTag = e.tag == effective
+            } else {
+                matchesTag = true
+            }
+            guard matchesTag else { continue }
+
+            if query.isEmpty {
+                filtered.append(e)
+            } else if e.item.lowercased().contains(lowerQuery) || e.tag.lowercased().contains(lowerQuery) {
+                filtered.append(e)
+            }
         }
-        return BudgetStore.searchEntries(tagged, query: searchText)
-    }
 
-    private var total: Decimal {
-        filteredEntries.reduce(Decimal(0)) { $0 + $1.amount }
-    }
+        let total = filtered.reduce(Decimal(0)) { $0 + $1.amount }
+        let expenses = monthExpenseMap[year &* 100 &+ month] ?? Decimal(0)
+        let sortedTagTotals = tagTotals.sorted { abs($0.value) > abs($1.value) }.map { (tag: $0.key, total: $0.value) }
 
-    private var currentBudget: MonthlyBudget {
-        BudgetStore.budgetForMonth(month, year: year, context: modelContext)
-    }
+        let currentBudget = BudgetStore.budgetForMonth(month, year: year, context: modelContext)
+        let remainder = BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
+        let daysRemaining = BudgetStore.daysRemainingInMonth(month: month, year: year)
+        let savingsRate = BudgetStore.savingsRate(savings: currentBudget.savings, investment: currentBudget.investment, income: currentBudget.income, remainder: remainder)
 
-    private var expenses: Decimal {
-        BudgetStore.totalForMonth(entries, month: month, year: year)
-    }
-
-    private var remainder: Decimal {
-        BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
-    }
-
-    private var daysRemaining: Int {
-        BudgetStore.daysRemainingInMonth(month: month, year: year)
-    }
-
-    private var savingsRateValue: Decimal? {
-        BudgetStore.savingsRate(savings: currentBudget.savings, investment: currentBudget.investment, income: currentBudget.income, remainder: remainder)
-    }
-
-    private var runningTotal: Decimal {
-        let pastBudgets = budgets.filter { $0.year < year || ($0.year == year && $0.month <= month) }
-        let monthExpenses = pastBudgets.map { b in
-            (month: b.month, year: b.year, total: BudgetStore.totalForMonth(entries, month: b.month, year: b.year))
+        let targetCutoff = year &* 100 &+ month
+        var runningTotal = Decimal(0)
+        var previousRunningTotal = Decimal(0)
+        for budget in budgets {
+            let k = budget.year &* 100 &+ budget.month
+            let exp = monthExpenseMap[k] ?? Decimal(0)
+            let rem = budget.income - exp - budget.bills - budget.savings - budget.investment
+            let contribution = budget.savings + budget.investment + rem
+            if k <= targetCutoff {
+                runningTotal += contribution
+            }
+            if k < targetCutoff {
+                previousRunningTotal += contribution
+            }
         }
-        return BudgetStore.runningTotalSavings(budgets: pastBudgets, expensesByMonth: monthExpenses)
-    }
 
-    private var previousRunningTotal: Decimal {
-        let prevBudgets = budgets.filter { $0.year < year || ($0.year == year && $0.month < month) }
-        let monthExpenses = prevBudgets.map { b in
-            (month: b.month, year: b.year, total: BudgetStore.totalForMonth(entries, month: b.month, year: b.year))
+        var tagColors: [String: Color] = [:]
+        for tag in tags {
+            tagColors[tag.name] = Color.hex(tag.name, from: BudgetStore.tagColorHex(tags, for: tag.name))
         }
-        return BudgetStore.runningTotalSavings(budgets: prevBudgets, expensesByMonth: monthExpenses)
+
+        return Snapshot(
+            filteredEntries: filtered,
+            monthEntries: monthEntries,
+            total: total,
+            expenses: expenses,
+            remainder: remainder,
+            daysRemaining: daysRemaining,
+            savingsRate: savingsRate,
+            tagTotals: sortedTagTotals,
+            currentBudget: currentBudget,
+            runningTotal: runningTotal,
+            previousRunningTotal: previousRunningTotal,
+            tagColors: tagColors
+        )
     }
 
-    private func colorForTag(_ tagName: String) -> Color {
-        Color.hex(tagName, from: BudgetStore.tagColorHex(tags, for: tagName))
+    private func colorForTag(_ tagName: String, snap: Snapshot) -> Color {
+        snap.tagColors[tagName] ?? Color.hex(tagName, from: nil)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
-            summaryBar
+        let snap = snapshot
+        return VStack(spacing: 0) {
+            headerBar(snap)
+            summaryBar(snap)
             Divider()
-            if filteredEntries.isEmpty {
+            if snap.filteredEntries.isEmpty {
                 emptyState
             } else {
-                entryTable
+                entryTable(snap)
             }
         }
         .searchable(text: $searchText, prompt: "Search entries")
@@ -119,27 +169,27 @@ struct DetailView: View {
             }
         }
         .sheet(isPresented: $showingBudgetEdit) {
-            MacBudgetEditView(budget: currentBudget)
+            MacBudgetEditView(budget: snap.currentBudget)
         }
     }
 
-    private var headerBar: some View {
+    private func headerBar(_ snap: Snapshot) -> some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(MoneyHelper.format(remainder))
+                Text(MoneyHelper.format(snap.remainder))
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(remainder >= 0 ? Color.green : Color.red)
-                if daysRemaining > 0 && remainder != 0 {
-                    Text("\(MoneyHelper.format(remainder / Decimal(daysRemaining))) / day")
+                    .foregroundStyle(snap.remainder >= 0 ? Color.green : Color.red)
+                if snap.daysRemaining > 0 && snap.remainder != 0 {
+                    Text("\(MoneyHelper.format(snap.remainder / Decimal(snap.daysRemaining))) / day")
                         .font(.callout)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }
             }
             Spacer()
-            if !tagTotals.isEmpty {
-                miniAllocation
+            if !snap.tagTotals.isEmpty {
+                miniAllocation(snap)
             }
         }
         .padding(.horizontal, 16)
@@ -147,8 +197,8 @@ struct DetailView: View {
         .background(.bar)
     }
 
-    private var miniAllocation: some View {
-        let items = tagTotals.filter { $0.total != 0 }
+    private func miniAllocation(_ snap: Snapshot) -> some View {
+        let items = snap.tagTotals.filter { $0.total != 0 }
         let totalAbs = items.map(\.total).map(abs).reduce(Decimal(0), +)
         return VStack(alignment: .trailing, spacing: 4) {
             if totalAbs > 0 {
@@ -157,7 +207,7 @@ struct DetailView: View {
                         ForEach(items.prefix(8), id: \.tag) { item in
                             let width = geo.size.width * CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / totalAbs))
                             RoundedRectangle(cornerRadius: 3)
-                                .fill(colorForTag(item.tag))
+                                .fill(colorForTag(item.tag, snap: snap))
                                 .frame(width: max(width, 3))
                         }
                     }
@@ -165,23 +215,23 @@ struct DetailView: View {
                 .frame(width: 120, height: 8)
                 .clipShape(RoundedRectangle(cornerRadius: 3))
             }
-            Text("\(filteredEntries.count) entries")
+            Text("\(snap.filteredEntries.count) entries")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .frame(width: 120)
     }
 
-    private var summaryBar: some View {
+    private func summaryBar(_ snap: Snapshot) -> some View {
         HStack(spacing: 0) {
-            summaryCell("Income", value: currentBudget.income, icon: "banknote.fill", color: .green)
+            summaryCell("Income", value: snap.currentBudget.income, icon: "banknote.fill", color: .green)
             Divider()
-            summaryCell("Bills", value: currentBudget.bills, icon: "doc.text.fill", color: .orange)
+            summaryCell("Bills", value: snap.currentBudget.bills, icon: "doc.text.fill", color: .orange)
             Divider()
-            summaryCell("Expenses", value: expenses, icon: "cart.fill", color: .red)
+            summaryCell("Expenses", value: snap.expenses, icon: "cart.fill", color: .red)
             Divider()
             VStack(alignment: .center, spacing: 2) {
-                if let rate = savingsRateValue {
+                if let rate = snap.savingsRate {
                     Text(String(format: "%.1f%%", NSDecimalNumber(decimal: rate * 100).doubleValue))
                         .font(.body)
                         .fontWeight(.semibold)
@@ -199,11 +249,11 @@ struct DetailView: View {
             .frame(maxWidth: .infinity)
             Divider()
             VStack(alignment: .trailing, spacing: 2) {
-                Text(MoneyHelper.format(runningTotal))
+                Text(MoneyHelper.format(snap.runningTotal))
                     .font(.body)
                     .fontWeight(.semibold)
                     .monospacedDigit()
-                let delta = runningTotal - previousRunningTotal
+                let delta = snap.runningTotal - snap.previousRunningTotal
                 Text("\(delta >= 0 ? "+" : "")\(MoneyHelper.format(delta))")
                     .font(.caption2)
                     .monospacedDigit()
@@ -251,8 +301,8 @@ struct DetailView: View {
         )
     }
 
-    private var entryTable: some View {
-        Table(filteredEntries, selection: $selectedEntries) {
+    private func entryTable(_ snap: Snapshot) -> some View {
+        Table(snap.filteredEntries, selection: $selectedEntries) {
             TableColumn("Date") { entry in
                 Text(entry.date.formatted(.dateTime.day().month(.abbreviated)))
                     .onTapGesture(count: 2) {
@@ -271,7 +321,7 @@ struct DetailView: View {
             TableColumn("Tag") { entry in
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(colorForTag(entry.tag))
+                        .fill(colorForTag(entry.tag, snap: snap))
                         .frame(width: 8, height: 8)
                     Text(entry.tag)
                 }
@@ -293,31 +343,22 @@ struct DetailView: View {
         .tableStyle(.inset(alternatesRowBackgrounds: true))
         .contextMenu(forSelectionType: Entry.ID.self) { items in
             if let id = items.first, items.count == 1,
-               let entry = filteredEntries.first(where: { $0.id == id }) {
+               let entry = snap.filteredEntries.first(where: { $0.id == id }) {
                 Button("Edit", systemImage: "pencil") {
                     onEditEntry(entry)
                 }
             }
             Button("Delete", systemImage: "trash") {
-                deleteSelected(items)
+                deleteSelected(items, snapshot: snap)
             }
         }
         .onDeleteCommand {
-            deleteSelected(selectedEntries)
+            deleteSelected(selectedEntries, snapshot: snap)
         }
     }
 
-    private var tagTotals: [(tag: String, total: Decimal)] {
-        let monthEntries = BudgetStore.entriesForMonth(entries, month: month, year: year)
-        var totals: [String: Decimal] = [:]
-        for entry in monthEntries {
-            totals[entry.tag, default: Decimal(0)] += entry.amount
-        }
-        return totals.sorted { abs($0.value) > abs($1.value) }.map { (tag: $0.key, total: $0.value) }
-    }
-
-    private func deleteSelected(_ ids: Set<Entry.ID>) {
-        let toDelete = filteredEntries.filter { ids.contains($0.id) }
+    private func deleteSelected(_ ids: Set<Entry.ID>, snapshot snap: Snapshot) {
+        let toDelete = snap.filteredEntries.filter { ids.contains($0.id) }
         BudgetStore.deleteEntries(toDelete, context: modelContext)
     }
 }
