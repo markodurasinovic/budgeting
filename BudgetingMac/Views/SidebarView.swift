@@ -24,25 +24,36 @@ struct SidebarView: View {
         Calendar.current.component(.year, from: selectedMonth)
     }
 
-    private var monthEntries: [Entry] {
-        BudgetStore.entriesForMonth(entries, month: month, year: year)
+    struct Snapshot {
+        let tagsInMonth: [String]
+        let entryCountForTag: [String: Int]
+        let tagColors: [String: Color]
     }
 
-    private var entryCountForTag: [String: Int] {
+    private var snapshot: Snapshot {
+        let cal = Calendar.current
         var counts: [String: Int] = [:]
-        for entry in monthEntries {
-            counts[entry.tag, default: 0] += 1
+        var tagsInMonthSet = Set<String>()
+        for entry in entries {
+            let comps = cal.dateComponents([.month, .year], from: entry.date)
+            if comps.month == month && comps.year == year {
+                counts[entry.tag, default: 0] += 1
+                tagsInMonthSet.insert(entry.tag)
+            }
         }
-        return counts
-    }
+        let tagsInMonth = tags.filter { tagsInMonthSet.contains($0.name) }.map(\.name).sorted()
 
-    private var tagsInMonth: [String] {
-        let tagSet = Set(monthEntries.map(\.tag))
-        return tags.filter { tagSet.contains($0.name) }.map(\.name).sorted()
+        var tagColors: [String: Color] = [:]
+        for tag in tags {
+            tagColors[tag.name] = Color.hex(tag.name, from: BudgetStore.tagColorHex(tags, for: tag.name))
+        }
+
+        return Snapshot(tagsInMonth: tagsInMonth, entryCountForTag: counts, tagColors: tagColors)
     }
 
     var body: some View {
-        List(selection: $selectedTag) {
+        let snap = snapshot
+        return List(selection: $selectedTag) {
             Section("Filter") {
                 Label("All Entries", systemImage: "list.bullet")
                     .tag("___ALL___" as String)
@@ -90,13 +101,13 @@ struct SidebarView: View {
                 }
             }
 
-            if !tagsInMonth.isEmpty {
+            if !snap.tagsInMonth.isEmpty {
                 Section("Tags") {
-                    ForEach(tagsInMonth, id: \.self) { tagName in
-                        let count = entryCountForTag[tagName, default: 0]
+                    ForEach(snap.tagsInMonth, id: \.self) { tagName in
+                        let count = snap.entryCountForTag[tagName, default: 0]
                         HStack {
                             Circle()
-                                .fill(Color.hex(tagName, from: BudgetStore.tagColorHex(tags, for: tagName)))
+                                .fill(snap.tagColors[tagName] ?? Color.hex(tagName, from: nil))
                                 .frame(width: 10, height: 10)
                             Text(tagName)
                             Spacer()

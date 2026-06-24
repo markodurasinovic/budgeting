@@ -10,82 +10,99 @@ struct MacCategoryBreakdownView: View {
     @Query(sort: [SortDescriptor(\Tag.name)])
     private var tags: [Tag]
 
-    @Query(sort: [SortDescriptor(\MonthlyBudget.year), SortDescriptor(\MonthlyBudget.month)])
-    private var budgets: [MonthlyBudget]
-
     let month: Int
     let year: Int
 
-    private var tagTotals: [(tag: String, total: Decimal)] {
-        BudgetStore.totalsByTagForMonth(entries, month: month, year: year)
+    struct Snapshot {
+        let tagTotals: [(tag: String, total: Decimal)]
+        let totalExpenses: Decimal
+        let tagEntryCounts: [String: Int]
+        let totalEntryCount: Int
+        let currentBudget: MonthlyBudget
+        let remainder: Decimal
+        let savingsRate: Decimal?
+        let tagColors: [String: Color]
+        let largestTag: String?
     }
 
-    private var totalExpenses: Decimal {
-        tagTotals.reduce(Decimal(0)) { $0 + $1.total }
-    }
-
-    private var currentBudget: MonthlyBudget {
-        BudgetStore.budgetForMonth(month, year: year, context: modelContext)
-    }
-
-    private var remainder: Decimal {
-        let expenses = BudgetStore.totalForMonth(entries, month: month, year: year)
-        return BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
-    }
-
-    private var savingsRateValue: Decimal? {
-        BudgetStore.savingsRate(savings: currentBudget.savings, investment: currentBudget.investment, income: currentBudget.income, remainder: remainder)
-    }
-
-    private var tagEntryCounts: [String: Int] {
-        let monthEntries = BudgetStore.entriesForMonth(entries, month: month, year: year)
-        var counts: [String: Int] = [:]
-        for entry in monthEntries {
-            counts[entry.tag, default: 0] += 1
+    private var snapshot: Snapshot {
+        let cal = Calendar.current
+        var tagTotals: [String: Decimal] = [:]
+        var tagEntryCounts: [String: Int] = [:]
+        var totalEntryCount = 0
+        for entry in entries {
+            let comps = cal.dateComponents([.month, .year], from: entry.date)
+            if comps.month == month && comps.year == year {
+                tagTotals[entry.tag, default: Decimal(0)] += entry.amount
+                tagEntryCounts[entry.tag, default: 0] += 1
+                totalEntryCount += 1
+            }
         }
-        return counts
+        let sortedTagTotals = tagTotals.sorted { abs($0.value) > abs($1.value) }.map { (tag: $0.key, total: $0.value) }
+        let totalExpenses = sortedTagTotals.reduce(Decimal(0)) { $0 + $1.total }
+        let largestTag = sortedTagTotals.first?.tag
+
+        let expenses = sortedTagTotals.reduce(Decimal(0)) { $0 + $1.total }
+        let currentBudget = BudgetStore.budgetForMonth(month, year: year, context: modelContext)
+        let remainder = BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
+        let savingsRate = BudgetStore.savingsRate(savings: currentBudget.savings, investment: currentBudget.investment, income: currentBudget.income, remainder: remainder)
+
+        var tagColors: [String: Color] = [:]
+        for tag in tags {
+            tagColors[tag.name] = Color.hex(tag.name, from: BudgetStore.tagColorHex(tags, for: tag.name))
+        }
+
+        return Snapshot(
+            tagTotals: sortedTagTotals,
+            totalExpenses: totalExpenses,
+            tagEntryCounts: tagEntryCounts,
+            totalEntryCount: totalEntryCount,
+            currentBudget: currentBudget,
+            remainder: remainder,
+            savingsRate: savingsRate,
+            tagColors: tagColors,
+            largestTag: largestTag
+        )
     }
 
-    private func colorForTag(_ tagName: String) -> Color {
-        Color.hex(tagName, from: BudgetStore.tagColorHex(tags, for: tagName))
+    private func colorForTag(_ tagName: String, snap: Snapshot) -> Color {
+        snap.tagColors[tagName] ?? Color.hex(tagName, from: nil)
     }
 
     var body: some View {
-        ScrollView {
+        let snap = snapshot
+        return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                totalCard
-
+                totalCard(snap)
                 HStack(spacing: 16) {
-                    budgetOverviewCard
-                    savingsCard
+                    budgetOverviewCard(snap)
+                    savingsCard(snap)
                 }
-
-                allocationCard
-
-                categoryBreakdownCard
+                allocationCard(snap)
+                categoryBreakdownCard(snap)
             }
             .padding(20)
         }
         .navigationTitle("Categories")
     }
 
-    private var totalCard: some View {
+    private func totalCard(_ snap: Snapshot) -> some View {
         VStack(spacing: 12) {
-            Text(monthName(month, year))
+            Text(Formatters.monthYearString(month: month, year: year))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .center)
 
-            Text(MoneyHelper.format(totalExpenses))
+            Text(MoneyHelper.format(snap.totalExpenses))
                 .font(.system(size: 36, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(totalExpenses < 0 ? Color.red : Color.primary)
+                .foregroundStyle(snap.totalExpenses < 0 ? Color.red : Color.primary)
 
             HStack(spacing: 16) {
-                Label("\(tagTotals.count) \(tagTotals.count == 1 ? "category" : "categories")", systemImage: "tag.fill")
+                Label("\(snap.tagTotals.count) \(snap.tagTotals.count == 1 ? "category" : "categories")", systemImage: "tag.fill")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Label("\(tagEntryCounts.values.reduce(0, +)) entries", systemImage: "list.bullet")
+                Label("\(snap.totalEntryCount) entries", systemImage: "list.bullet")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -97,21 +114,21 @@ struct MacCategoryBreakdownView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var budgetOverviewCard: some View {
+    private func budgetOverviewCard(_ snap: Snapshot) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Budget", systemImage: "target")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            metricRow("Income", value: currentBudget.income, icon: "banknote.fill", color: .green)
-            metricRow("Bills", value: currentBudget.bills, icon: "doc.text.fill", color: .orange)
-            metricRow("Savings", value: currentBudget.savings, icon: "leaf.fill", color: .blue)
-            metricRow("Investment", value: currentBudget.investment, icon: "chart.line.uptrend.xyaxis", color: .purple)
+            metricRow("Income", value: snap.currentBudget.income, icon: "banknote.fill", color: .green)
+            metricRow("Bills", value: snap.currentBudget.bills, icon: "doc.text.fill", color: .orange)
+            metricRow("Savings", value: snap.currentBudget.savings, icon: "leaf.fill", color: .blue)
+            metricRow("Investment", value: snap.currentBudget.investment, icon: "chart.line.uptrend.xyaxis", color: .purple)
 
             Divider()
 
-            metricRow("Remainder", value: remainder, icon: remainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill", color: remainder >= 0 ? .green : .red, accent: true)
+            metricRow("Remainder", value: snap.remainder, icon: snap.remainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill", color: snap.remainder >= 0 ? .green : .red, accent: true)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,9 +136,9 @@ struct MacCategoryBreakdownView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var savingsCard: some View {
-        let savingsTotal = currentBudget.savings + currentBudget.investment + remainder
-        let savingsPct = savingsRateValue.map { CGFloat(truncating: NSDecimalNumber(decimal: $0 * 100)) }
+    private func savingsCard(_ snap: Snapshot) -> some View {
+        let savingsTotal = snap.currentBudget.savings + snap.currentBudget.investment + snap.remainder
+        let savingsPct = snap.savingsRate.map { CGFloat(truncating: NSDecimalNumber(decimal: $0 * 100)) }
 
         return VStack(alignment: .leading, spacing: 14) {
             Label("Savings", systemImage: "leaf.fill")
@@ -164,8 +181,8 @@ struct MacCategoryBreakdownView: View {
 
             Divider()
 
-            metricRow("Savings", value: currentBudget.savings, icon: "leaf.fill", color: .blue)
-            metricRow("Investment", value: currentBudget.investment, icon: "chart.line.uptrend.xyaxis", color: .purple)
+            metricRow("Savings", value: snap.currentBudget.savings, icon: "leaf.fill", color: .blue)
+            metricRow("Investment", value: snap.currentBudget.investment, icon: "chart.line.uptrend.xyaxis", color: .purple)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -173,8 +190,8 @@ struct MacCategoryBreakdownView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var allocationCard: some View {
-        let items = tagTotals.filter { $0.total != 0 }
+    private func allocationCard(_ snap: Snapshot) -> some View {
+        let items = snap.tagTotals.filter { $0.total != 0 }
         let total = items.map(\.total).reduce(Decimal(0), +)
 
         return VStack(alignment: .leading, spacing: 14) {
@@ -189,7 +206,7 @@ struct MacCategoryBreakdownView: View {
                         ForEach(items, id: \.tag) { item in
                             let width = geo.size.width * CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / abs(total)))
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(colorForTag(item.tag))
+                                .fill(colorForTag(item.tag, snap: snap))
                                 .frame(width: max(width, 4))
                         }
                     }
@@ -202,7 +219,7 @@ struct MacCategoryBreakdownView: View {
                     ForEach(items, id: \.tag) { item in
                         HStack(spacing: 6) {
                             Circle()
-                                .fill(colorForTag(item.tag))
+                                .fill(colorForTag(item.tag, snap: snap))
                                 .frame(width: 8, height: 8)
                             Text(item.tag)
                                 .font(.caption)
@@ -227,19 +244,19 @@ struct MacCategoryBreakdownView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var categoryBreakdownCard: some View {
+    private func categoryBreakdownCard(_ snap: Snapshot) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Categories", systemImage: "tag.fill")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            if tagTotals.isEmpty {
+            if snap.tagTotals.isEmpty {
                 ContentUnavailableView("No entries", systemImage: "tray", description: Text("Add entries to see categories"))
                     .frame(maxWidth: .infinity)
             } else {
-                ForEach(tagTotals, id: \.tag) { item in
-                    categoryRow(item)
+                ForEach(snap.tagTotals, id: \.tag) { item in
+                    categoryRow(item, snap: snap)
                 }
             }
         }
@@ -249,15 +266,15 @@ struct MacCategoryBreakdownView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func categoryRow(_ item: (tag: String, total: Decimal)) -> some View {
-        let pct = abs(totalExpenses) > 0 ? CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / abs(totalExpenses))) : CGFloat(0)
-        let count = tagEntryCounts[item.tag, default: 0]
-        let isLargest = tagTotals.first.flatMap { item.tag == $0.tag && item.total == $0.total } ?? false
+    private func categoryRow(_ item: (tag: String, total: Decimal), snap: Snapshot) -> some View {
+        let pct = abs(snap.totalExpenses) > 0 ? CGFloat(truncating: NSDecimalNumber(decimal: abs(item.total) / abs(snap.totalExpenses))) : CGFloat(0)
+        let count = snap.tagEntryCounts[item.tag, default: 0]
+        let isLargest = snap.largestTag == item.tag
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 Circle()
-                    .fill(colorForTag(item.tag))
+                    .fill(colorForTag(item.tag, snap: snap))
                     .frame(width: 12, height: 12)
 
                 Text(item.tag)
@@ -288,7 +305,7 @@ struct MacCategoryBreakdownView: View {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(Color(nsColor: .quaternaryLabelColor))
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(colorForTag(item.tag).opacity(isLargest ? 0.8 : 0.5))
+                        .fill(colorForTag(item.tag, snap: snap).opacity(isLargest ? 0.8 : 0.5))
                         .frame(width: geo.size.width * min(1, pct))
                 }
             }
@@ -296,7 +313,7 @@ struct MacCategoryBreakdownView: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
-        .background(isLargest ? colorForTag(item.tag).opacity(0.06) : Color.clear)
+        .background(isLargest ? colorForTag(item.tag, snap: snap).opacity(0.06) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
@@ -314,14 +331,6 @@ struct MacCategoryBreakdownView: View {
                 .foregroundStyle(accent ? color : (value < 0 ? Color.red : Color.primary))
         }
         .font(.body)
-    }
-
-    private func monthName(_ month: Int, _ year: Int) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: year, month: month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
-        return fmt.string(from: date)
     }
 }
 

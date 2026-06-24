@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 import BudgetingKit
-import WidgetKit
 
 struct IdentifiableDate: Identifiable {
     let id = UUID()
@@ -18,31 +17,25 @@ struct MainContentView: View {
     @State private var entryToEdit: Entry?
 
     var body: some View {
-        NavigationSplitView {
+        let components = Calendar.current.dateComponents([.month, .year], from: selectedMonth)
+        let month = components.month ?? 0
+        let year = components.year ?? 0
+        return NavigationSplitView {
             SidebarView(
                 selectedMonth: $selectedMonth,
                 selectedTag: $selectedTag
             )
         } detail: {
             if selectedTag == "___CATEGORIES___" {
-                MacCategoryBreakdownView(
-                    month: Calendar.current.component(.month, from: selectedMonth),
-                    year: Calendar.current.component(.year, from: selectedMonth)
-                )
+                MacCategoryBreakdownView(month: month, year: year)
             } else if selectedTag == "___PORTFOLIO___" {
-                MacPortfolioView(
-                    month: Calendar.current.component(.month, from: selectedMonth),
-                    year: Calendar.current.component(.year, from: selectedMonth)
-                )
+                MacPortfolioView(month: month, year: year)
             } else if selectedTag == "___DAILY___" {
-                MacDailySpendView(
-                    month: Calendar.current.component(.month, from: selectedMonth),
-                    year: Calendar.current.component(.year, from: selectedMonth)
-                )
+                MacDailySpendView(month: month, year: year)
             } else {
                 DetailView(
-                    month: Calendar.current.component(.month, from: selectedMonth),
-                    year: Calendar.current.component(.year, from: selectedMonth),
+                    month: month,
+                    year: year,
                     selectedTag: selectedTag,
                     onAddEntry: { date in
                         addEntryDate = date
@@ -59,34 +52,29 @@ struct MainContentView: View {
         )) { _ in
             MacAddEditEntryView(mode: .add(initialDate: addEntryDate))
                 .onDisappear {
-                    BudgetingContainer.writeWidgetData(context: modelContext)
-                    WidgetCenter.shared.reloadAllTimelines()
+                    BudgetingContainer.scheduleWidgetRefresh(context: modelContext)
                 }
         }
         .sheet(item: $entryToEdit) { entry in
             MacAddEditEntryView(mode: .edit(entry))
                 .onDisappear {
-                    BudgetingContainer.writeWidgetData(context: modelContext)
-                    WidgetCenter.shared.reloadAllTimelines()
+                    BudgetingContainer.scheduleWidgetRefresh(context: modelContext)
                 }
         }
         .sheet(isPresented: $showingImport) {
             MacCSVImportView()
                 .onDisappear {
-                    BudgetingContainer.writeWidgetData(context: modelContext)
-                    WidgetCenter.shared.reloadAllTimelines()
+                    BudgetingContainer.scheduleWidgetRefresh(context: modelContext)
                 }
         }
         .onAppear {
-            BudgetingContainer.writeWidgetData(context: modelContext)
-            WidgetCenter.shared.reloadAllTimelines()
+            BudgetingContainer.scheduleWidgetRefresh(context: modelContext)
         }
         .onReceive(NotificationCenter.default.publisher(for: .newEntry)) { _ in
             addEntryDate = Date()
         }
         .onReceive(NotificationCenter.default.publisher(for: .refreshWidgets)) { _ in
-            BudgetingContainer.writeWidgetData(context: modelContext)
-            WidgetCenter.shared.reloadAllTimelines()
+            BudgetingContainer.scheduleWidgetRefresh(context: modelContext)
         }
         .onChange(of: addEntryFromWidget) { _, newValue in
             if newValue {

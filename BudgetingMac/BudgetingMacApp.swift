@@ -11,7 +11,7 @@ struct BudgetingMacApp: App {
     var body: some Scene {
         WindowGroup {
             MainContentView(showingImport: $showingImport, addEntryFromWidget: $addEntryFromWidget)
-                .modelContainer(BudgetingContainer.makeModelContainer())
+                .modelContainer(BudgetingContainer.shared())
                 .onOpenURL { url in
                     handleURL(url)
                 }

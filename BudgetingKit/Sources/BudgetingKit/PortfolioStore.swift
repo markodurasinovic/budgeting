@@ -7,11 +7,7 @@ public struct PortfolioRow: Identifiable {
     public let debt: DebtSnapshot?
 
     public var label: String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM yyyy"
-        let components = DateComponents(year: portfolio.year, month: portfolio.month, day: 1)
-        guard let date = Calendar.current.date(from: components) else { return "\(portfolio.month)/\(portfolio.year)" }
-        return dateFormatter.string(from: date)
+        Formatters.monthYearString(month: portfolio.month, year: portfolio.year)
     }
 
     public var totalExPension: Decimal {

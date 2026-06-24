@@ -1,8 +1,41 @@
 import Foundation
 import SwiftData
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 public enum BudgetingContainer {
     public static let appGroupIdentifier = "group.com.markodurasinovic.budgeting"
+    public static let widgetKind = "BudgetingWidget"
+
+    private static var pendingWidgetRefresh: Task<Void, Never>?
+
+    @MainActor
+    public static func scheduleWidgetRefresh(context: ModelContext) {
+        pendingWidgetRefresh?.cancel()
+        pendingWidgetRefresh = Task { @MainActor in
+            let nanos: UInt64 = 400_000_000
+            try? await Task.sleep(nanoseconds: nanos)
+            guard !Task.isCancelled else { return }
+            writeWidgetData(context: context)
+            #if canImport(WidgetKit)
+            WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+            #endif
+        }
+    }
+
+    @MainActor
+    public private(set) static var sharedModelContainer: ModelContainer?
+
+    @MainActor
+    public static func shared() -> ModelContainer {
+        if let container = sharedModelContainer {
+            return container
+        }
+        let container = makeModelContainer()
+        sharedModelContainer = container
+        return container
+    }
 
     @MainActor
     public static func makeModelContainer() -> ModelContainer {
