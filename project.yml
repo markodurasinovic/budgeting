@@ -67,9 +67,14 @@ targets:
       - package: BudgetingKit
     entitlements:
       path: BudgetingWidget/BudgetingWidget.entitlements
+    info:
+      path: BudgetingWidget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.markodurasinovic.Budgeting.Widget
+        PRODUCT_BUNDLE_IDENTIFIER: com.markodurasinovic.Budgeting.Mac.BudgetingWidget
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: YES

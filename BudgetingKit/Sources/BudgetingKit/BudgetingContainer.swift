@@ -40,7 +40,7 @@ public enum BudgetingContainer {
     @MainActor
     public static func makeModelContainer() -> ModelContainer {
         let schema = Schema([Entry.self, Tag.self, MonthlyBudget.self, PortfolioSnapshot.self, DebtSnapshot.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .none, cloudKitDatabase: .none)
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier(appGroupIdentifier), cloudKitDatabase: .none)
 
         do {
             let container = try ModelContainer(for: schema, configurations: [config])

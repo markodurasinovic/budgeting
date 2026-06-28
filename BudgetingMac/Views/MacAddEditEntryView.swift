@@ -24,10 +24,25 @@ struct MacAddEditEntryView: View {
     @State private var editingAmountText = ""
 
     struct EntryRow: Identifiable {
-        let id = UUID()
+        let id: UUID
         var item = ""
         var tag = ""
         var amountText = ""
+
+        init(id: UUID = UUID()) {
+            self.id = id
+        }
+    }
+
+    private func rowBinding(for id: UUID) -> Binding<EntryRow> {
+        Binding(
+            get: { rows.first(where: { $0.id == id }) ?? EntryRow(id: id) },
+            set: { newValue in
+                if let index = rows.firstIndex(where: { $0.id == id }) {
+                    rows[index] = newValue
+                }
+            }
+        )
     }
 
     init(mode: Mode) {
@@ -102,24 +117,14 @@ struct MacAddEditEntryView: View {
 
     private var addForm: some View {
         Section {
-            ForEach($rows) { $row in
-                HStack(alignment: .top) {
-                    VStack(spacing: 6) {
-                        TextField("Item", text: $row.item)
-                        tagField(text: $row.tag, allTags: allTagNames)
-                        TextField("Amount", text: $row.amountText)
-                    }
-                    if rows.count > 1 {
-                        Button {
-                            rows.removeAll { $0.id == row.id }
-                        } label: {
-                            Image(systemName: "minus.circle.fill")
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.borderless)
-                        .padding(.top, 6)
-                    }
-                }
+            ForEach(rows) { row in
+                MacEntryRowEditor(
+                    row: rowBinding(for: row.id),
+                    allTagNames: allTagNames,
+                    canDelete: rows.count > 1,
+                    onDelete: { rows.removeAll { $0.id == row.id } }
+                )
+                .id(row.id)
             }
             Button {
                 rows.append(EntryRow())
@@ -182,6 +187,51 @@ struct MacAddEditEntryView: View {
         guard case .edit(let entry) = mode else { return }
         BudgetStore.deleteEntry(entry, context: modelContext)
         dismiss()
+    }
+}
+
+private struct MacEntryRowEditor: View {
+    @Binding var row: MacAddEditEntryView.EntryRow
+    let allTagNames: [String]
+    let canDelete: Bool
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack(spacing: 6) {
+                TextField("Item", text: $row.item)
+                tagField(text: $row.tag, allTags: allTagNames)
+                TextField("Amount", text: $row.amountText)
+            }
+            if canDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.borderless)
+                .padding(.top, 6)
+            }
+        }
+    }
+
+    private func tagField(text: Binding<String>, allTags: [String]) -> some View {
+        let suggestions = allTags.filter { existing in
+            !text.wrappedValue.isEmpty && existing.localizedCaseInsensitiveContains(text.wrappedValue) && existing != text.wrappedValue
+        }
+        return VStack(spacing: 4) {
+            TextField("Tag (optional)", text: text)
+            if !suggestions.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(suggestions.prefix(5), id: \.self) { suggestion in
+                        Button(suggestion) {
+                            text.wrappedValue = suggestion
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                }
+            }
+        }
     }
 }
 
