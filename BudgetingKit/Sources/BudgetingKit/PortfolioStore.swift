@@ -35,10 +35,14 @@ public struct PortfolioEditState: Identifiable {
     public let id = UUID()
     public let portfolio: PortfolioSnapshot
     public let debt: DebtSnapshot
+    public let previousPortfolio: PortfolioSnapshot?
+    public let previousDebt: DebtSnapshot?
 
-    public init(portfolio: PortfolioSnapshot, debt: DebtSnapshot) {
+    public init(portfolio: PortfolioSnapshot, debt: DebtSnapshot, previousPortfolio: PortfolioSnapshot? = nil, previousDebt: DebtSnapshot? = nil) {
         self.portfolio = portfolio
         self.debt = debt
+        self.previousPortfolio = previousPortfolio
+        self.previousDebt = previousDebt
     }
 }
 
@@ -61,6 +65,20 @@ public enum PortfolioStore {
         let debt = DebtSnapshot(month: month, year: year)
         context.insert(debt)
         return debt
+    }
+
+    public static func existingSnapshot(month: Int, year: Int, context: ModelContext) -> PortfolioSnapshot? {
+        let descriptor = FetchDescriptor<PortfolioSnapshot>(predicate: #Predicate { $0.month == month && $0.year == year })
+        return try? context.fetch(descriptor).first
+    }
+
+    public static func existingDebt(month: Int, year: Int, context: ModelContext) -> DebtSnapshot? {
+        let descriptor = FetchDescriptor<DebtSnapshot>(predicate: #Predicate { $0.month == month && $0.year == year })
+        return try? context.fetch(descriptor).first
+    }
+
+    public static func previousMonth(for month: Int, year: Int) -> (month: Int, year: Int) {
+        month == 1 ? (12, year - 1) : (month - 1, year)
     }
 
     public static func allRows(portfolios: [PortfolioSnapshot], debts: [DebtSnapshot]) -> [PortfolioRow] {

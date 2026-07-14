@@ -7,6 +7,8 @@ struct MacPortfolioEditView: View {
 
     let portfolio: PortfolioSnapshot
     let debt: DebtSnapshot
+    let previousPortfolio: PortfolioSnapshot?
+    let previousDebt: DebtSnapshot?
 
     @State private var ssIsaText = ""
     @State private var cashIsaText = ""
@@ -26,24 +28,30 @@ struct MacPortfolioEditView: View {
         return dateFormatter.string(from: date)
     }
 
+    private var previousMonthLabel: String? {
+        guard previousPortfolio != nil || previousDebt != nil else { return nil }
+        let prev = PortfolioStore.previousMonth(for: portfolio.month, year: portfolio.year)
+        return Formatters.monthYearString(month: prev.month, year: prev.year)
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             Text("Edit Portfolio — \(monthName)")
                 .font(.headline)
 
             Form {
-                Section("Investments") {
-                    TextField("S&S ISA", text: $ssIsaText)
-                    TextField("Cash ISA", text: $cashIsaText)
-                    TextField("LISA", text: $lisaText)
-                    TextField("Crypto", text: $cryptoText)
-                    TextField("Pension", text: $pensionText)
+                Section("Investments" + (previousMonthLabel.map { "  ·  previous: \($0)" } ?? "")) {
+                    fieldRow("S&S ISA", text: $ssIsaText, previous: previousPortfolio?.ssIsa)
+                    fieldRow("Cash ISA", text: $cashIsaText, previous: previousPortfolio?.cashIsa)
+                    fieldRow("LISA", text: $lisaText, previous: previousPortfolio?.lisa)
+                    fieldRow("Crypto", text: $cryptoText, previous: previousPortfolio?.crypto)
+                    fieldRow("Pension", text: $pensionText, previous: previousPortfolio?.pension)
                     TextField("Notes", text: $notesText)
                 }
-                Section("Debts") {
-                    TextField("Chase", text: $chaseText)
-                    TextField("Amex", text: $amexText)
-                    TextField("Other", text: $otherText)
+                Section("Debts" + (previousMonthLabel.map { "  ·  previous: \($0)" } ?? "")) {
+                    fieldRow("Chase", text: $chaseText, previous: previousDebt?.chase)
+                    fieldRow("Amex", text: $amexText, previous: previousDebt?.amex)
+                    fieldRow("Other", text: $otherText, previous: previousDebt?.other)
                 }
             }
             .formStyle(.grouped)
@@ -58,8 +66,20 @@ struct MacPortfolioEditView: View {
             .padding(.horizontal)
             .padding(.bottom)
         }
-        .frame(width: 400, height: 480)
+        .frame(width: 440, height: 520)
         .onAppear(perform: loadValues)
+    }
+
+    private func fieldRow(_ label: String, text: Binding<String>, previous: Decimal?) -> some View {
+        HStack {
+            TextField(label, text: text)
+            if let prev = previous {
+                Text(MoneyHelper.format(prev))
+                    .font(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private func loadValues() {
@@ -89,6 +109,6 @@ struct MacPortfolioEditView: View {
 }
 
 #Preview {
-    MacPortfolioEditView(portfolio: PortfolioSnapshot(month: 6, year: 2026), debt: DebtSnapshot(month: 6, year: 2026))
+    MacPortfolioEditView(portfolio: PortfolioSnapshot(month: 6, year: 2026), debt: DebtSnapshot(month: 6, year: 2026), previousPortfolio: PortfolioSnapshot(month: 5, year: 2026, ssIsa: 12000, crypto: 3000), previousDebt: DebtSnapshot(month: 5, year: 2026, chase: 500))
         .modelContainer(BudgetingContainer.makePreviewContainer())
 }

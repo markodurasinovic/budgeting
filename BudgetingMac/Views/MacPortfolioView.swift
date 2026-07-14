@@ -64,7 +64,10 @@ struct MacPortfolioView: View {
                 Button {
                     let p = PortfolioStore.snapshotForMonth(month, year: year, context: modelContext)
                     let d = PortfolioStore.debtForMonth(month, year: year, context: modelContext)
-                    editState = PortfolioEditState(portfolio: p, debt: d)
+                    let prev = PortfolioStore.previousMonth(for: month, year: year)
+                    let pp = PortfolioStore.existingSnapshot(month: prev.month, year: prev.year, context: modelContext)
+                    let pd = PortfolioStore.existingDebt(month: prev.month, year: prev.year, context: modelContext)
+                    editState = PortfolioEditState(portfolio: p, debt: d, previousPortfolio: pp, previousDebt: pd)
                 } label: {
                     Label("Edit", systemImage: "pencil")
                 }
@@ -72,7 +75,7 @@ struct MacPortfolioView: View {
         }
         .navigationTitle("Portfolio")
         .sheet(item: $editState) { state in
-            MacPortfolioEditView(portfolio: state.portfolio, debt: state.debt)
+            MacPortfolioEditView(portfolio: state.portfolio, debt: state.debt, previousPortfolio: state.previousPortfolio, previousDebt: state.previousDebt)
         }
     }
 
