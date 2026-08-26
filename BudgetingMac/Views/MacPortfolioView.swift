@@ -129,10 +129,17 @@ struct MacPortfolioView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
+            Divider()
+
             investmentRow("S&S ISA", value: row.portfolio.ssIsa, icon: "chart.bar.fill", color: .blue)
             investmentRow("Cash ISA", value: row.portfolio.cashIsa, icon: "banknote.fill", color: .green)
             investmentRow("LISA", value: row.portfolio.lisa, icon: "house.fill", color: .orange)
             investmentRow("Crypto", value: row.portfolio.crypto, icon: "bitcoinsign.circle.fill", color: .purple)
+
+            totalRow("Total", value: row.totalExPension, delta: nil)
+
+            Divider()
+
             investmentRow("Pension", value: row.portfolio.pension, icon: "building.columns.fill", color: .teal)
 
             Divider()
@@ -151,6 +158,8 @@ struct MacPortfolioView: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(row.debtTotal > 0 ? .red : .secondary)
+
+            Divider()
 
             if let d = row.debt {
                 debtRow("Chase", value: d.chase)
