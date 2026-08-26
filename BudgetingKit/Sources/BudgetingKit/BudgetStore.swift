@@ -234,6 +234,25 @@ public enum BudgetStore {
         return (savings + investment + remainder) / income
     }
 
+    public static func carryover(month: Int, year: Int, entries: [Entry], budgets: [MonthlyBudget]) -> Decimal {
+        let previous = PortfolioStore.previousMonth(for: month, year: year)
+        guard let previousBudget = budgets.first(where: {
+            $0.month == previous.month && $0.year == previous.year
+        }), previousBudget.income > 0 else {
+            return Decimal(0)
+        }
+
+        let previousExpenses = totalForMonth(entries, month: previous.month, year: previous.year)
+        let previousRemainder = remainder(
+            income: previousBudget.income,
+            expenses: previousExpenses,
+            bills: previousBudget.bills,
+            savings: previousBudget.savings,
+            investment: previousBudget.investment
+        )
+        return previousRemainder
+    }
+
     public static func runningTotalSavings(budgets: [MonthlyBudget], expensesByMonth: [(month: Int, year: Int, total: Decimal)]) -> Decimal {
         let expenseMap = Dictionary(uniqueKeysWithValues: expensesByMonth.map { (key: "\($0.year)-\($0.month)", value: $0.total) })
         return budgets.reduce(Decimal(0)) { total, budget in

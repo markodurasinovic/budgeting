@@ -24,6 +24,8 @@ struct MacDailySpendView: View {
         let totalDays: Int
         let currentBudget: MonthlyBudget
         let remainder: Decimal
+        let carryover: Decimal
+        let adjustedRemainder: Decimal
         let biggestDay: (day: Int, total: Decimal)?
         let topSpendingDays: [(day: Int, total: Decimal)]
         let zeroDays: Int
@@ -71,6 +73,7 @@ struct MacDailySpendView: View {
 
         let currentBudget = BudgetStore.budgetForMonth(month, year: year, context: modelContext)
         let remainder = BudgetStore.remainder(income: currentBudget.income, expenses: totalSpend, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
+        let carryover = BudgetStore.carryover(month: month, year: year, entries: entries, budgets: budgets)
 
         let pastDays = dailyTotals.filter { $0.day <= daysElapsed && $0.total != 0 }
         let biggestDay = pastDays.max(by: { abs($0.total) < abs($1.total) })
@@ -89,6 +92,8 @@ struct MacDailySpendView: View {
             totalDays: daysInMonth,
             currentBudget: currentBudget,
             remainder: remainder,
+            carryover: carryover,
+            adjustedRemainder: remainder + carryover,
             biggestDay: biggestDay,
             topSpendingDays: topSpendingDays,
             zeroDays: zeroDays
@@ -178,9 +183,9 @@ struct MacDailySpendView: View {
 
     private func budgetTrackCard(_ snap: Snapshot) -> some View {
         let spent = abs(snap.totalSpend)
-        let budget = snap.currentBudget.income - snap.currentBudget.bills - snap.currentBudget.savings - snap.currentBudget.investment
+        let budget = snap.currentBudget.income - snap.currentBudget.bills - snap.currentBudget.savings - snap.currentBudget.investment + snap.carryover
         let budgetUsedPct = budget > 0 ? CGFloat(truncating: NSDecimalNumber(decimal: spent / budget * 100)) : CGFloat(0)
-        let dailyBudget = snap.daysRemaining > 0 ? snap.remainder / Decimal(snap.daysRemaining) : Decimal(0)
+        let dailyBudget = snap.daysRemaining > 0 ? snap.adjustedRemainder / Decimal(snap.daysRemaining) : Decimal(0)
 
         return VStack(alignment: .leading, spacing: 14) {
             Label("Budget", systemImage: "target")
@@ -188,8 +193,11 @@ struct MacDailySpendView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
-            budgetMetric("Remainder", value: snap.remainder, color: snap.remainder >= 0 ? .green : .red)
+            budgetMetric("Remainder", value: snap.adjustedRemainder, color: snap.adjustedRemainder >= 0 ? .green : .red)
             budgetMetric("Daily budget", value: dailyBudget, color: dailyBudget >= 0 ? .green : .red)
+            if snap.carryover != 0 {
+                budgetMetric("Carried over", value: snap.carryover, color: snap.carryover > 0 ? .green : .red)
+            }
 
             if budget > 0 {
                 VStack(alignment: .leading, spacing: 6) {

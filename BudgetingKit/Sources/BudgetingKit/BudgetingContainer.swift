@@ -78,6 +78,9 @@ public enum BudgetingContainer {
         let monthEntries = BudgetStore.entriesForMonth(allEntries, month: month, year: year)
         let expenses = monthEntries.reduce(Decimal(0)) { $0 + $1.amount }
 
+        let budgetDescriptor = FetchDescriptor<MonthlyBudget>()
+        let allBudgets = (try? context.fetch(budgetDescriptor)) ?? []
+
         let remainder = BudgetStore.remainder(
             income: budget.income,
             expenses: expenses,
@@ -85,21 +88,24 @@ public enum BudgetingContainer {
             savings: budget.savings,
             investment: budget.investment
         )
+        let carryover = BudgetStore.carryover(month: month, year: year, entries: allEntries, budgets: allBudgets)
+        let adjustedRemainder = remainder + carryover
 
         let totalDays = BudgetStore.daysInMonth(month: month, year: year)
         let daysElapsed = BudgetStore.daysElapsedInMonth(month: month, year: year)
         let daysRemaining = BudgetStore.daysRemainingInMonth(month: month, year: year)
-        let dailyBudget = daysRemaining > 0 ? remainder / Decimal(daysRemaining) : Decimal(0)
+        let dailyBudget = daysRemaining > 0 ? adjustedRemainder / Decimal(daysRemaining) : Decimal(0)
 
         let hasData = budget.income > 0 || !monthEntries.isEmpty
 
-        defaults.set(NSDecimalNumber(decimal: remainder).doubleValue, forKey: "widget_remainder")
+        defaults.set(NSDecimalNumber(decimal: adjustedRemainder).doubleValue, forKey: "widget_remainder")
         defaults.set(NSDecimalNumber(decimal: dailyBudget).doubleValue, forKey: "widget_dailyBudget")
         defaults.set(NSDecimalNumber(decimal: budget.income).doubleValue, forKey: "widget_income")
         defaults.set(NSDecimalNumber(decimal: budget.bills).doubleValue, forKey: "widget_bills")
         defaults.set(NSDecimalNumber(decimal: expenses).doubleValue, forKey: "widget_expenses")
         defaults.set(NSDecimalNumber(decimal: budget.savings).doubleValue, forKey: "widget_savings")
         defaults.set(NSDecimalNumber(decimal: budget.investment).doubleValue, forKey: "widget_investment")
+        defaults.set(NSDecimalNumber(decimal: carryover).doubleValue, forKey: "widget_carryover")
         defaults.set(daysRemaining, forKey: "widget_daysRemaining")
         defaults.set(daysElapsed, forKey: "widget_daysElapsed")
         defaults.set(totalDays, forKey: "widget_totalDays")

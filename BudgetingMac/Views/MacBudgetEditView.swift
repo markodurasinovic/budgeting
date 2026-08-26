@@ -5,6 +5,9 @@ import BudgetingKit
 struct MacBudgetEditView: View {
     @Environment(\.dismiss) private var dismiss
 
+    @Query private var entries: [Entry]
+    @Query private var budgets: [MonthlyBudget]
+
     let budget: MonthlyBudget
 
     @State private var incomeText = ""
@@ -23,6 +26,10 @@ struct MacBudgetEditView: View {
             income: MoneyHelper.parse(incomeText) ?? 0,
             remainder: remainder
         )
+    }
+
+    private var carryover: Decimal {
+        BudgetStore.carryover(month: budget.month, year: budget.year, entries: entries, budgets: budgets)
     }
 
     var body: some View {
@@ -57,6 +64,16 @@ Text("Total saved:")
             }
             .padding(.horizontal)
 
+            if carryover != 0 {
+                Text(carryover > 0
+                     ? "\(MoneyHelper.format(carryover)) surplus carried over from last month"
+                     : "Last month ended \(MoneyHelper.format(carryover)) — consider reducing savings/investment")
+                    .font(.caption)
+                    .foregroundStyle(carryover > 0 ? .green : .red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
             HStack {
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
@@ -74,7 +91,7 @@ Text("Total saved:")
             .padding(.horizontal)
             .padding(.bottom)
         }
-        .frame(width: 350, height: 380)
+        .frame(width: 350, height: 420)
         .onAppear {
             incomeText = budget.income == 0 ? "" : MoneyHelper.format(budget.income).replacingOccurrences(of: "£", with: "")
             billsText = budget.bills == 0 ? "" : MoneyHelper.format(budget.bills).replacingOccurrences(of: "£", with: "")

@@ -74,10 +74,45 @@ if [ ! -d "${APP_PATH}" ]; then
     exit 1
 fi
 
-echo "Removing previous installation..."
-rm -rf "${INSTALL_PATH}"
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister"
+
+echo "Quitting any running instances..."
+osascript -e 'tell application id "com.markodurasinovic.Budgeting.Mac" to quit' &> /dev/null || true
+killall "${APP_NAME}" &> /dev/null || true
+killall "BudgetingWidget" &> /dev/null || true
+
+echo "Unregistering old widget from pluginkit..."
+pluginkit -r "${INSTALL_PATH}/Contents/PlugIns/BudgetingWidget.appex" &> /dev/null || true
+
+echo "Locating all previous installations..."
+OLD_COPIES=()
+while IFS= read -r p; do
+    OLD_COPIES+=("${p}")
+done < <(mdfind "kMDItemFSName == '${APP_NAME}.app'" 2>/dev/null)
+
+for p in "/Applications/${APP_NAME}.app" "${HOME}/Applications/${APP_NAME}.app"; do
+    [ -d "${p}" ] && OLD_COPIES+=("${p}")
+done
+
+for p in "${HOME}/Library/Developer/Xcode/DerivedData/"*/Build/Products/*/"${APP_NAME}.app"; do
+    [ -d "${p}" ] && OLD_COPIES+=("${p}")
+done
+
+while IFS= read -r p; do
+    [ -d "${p}" ] && OLD_COPIES+=("${p}")
+done < <(${LSREGISTER} -dump 2>/dev/null | sed -nE "s|^[[:space:]]*path:[[:space:]]*(/.+/${APP_NAME}\.app)[[:space:]]*$|\1|p")
+
+for OLD in $(printf '%s\n' "${OLD_COPIES[@]}" | sort -u); do
+    [ -n "${OLD}" ] || continue
+    [ -d "${OLD}" ] || continue
+    [[ "${OLD}" == "${APP_PATH}" ]] && continue
+    echo "Removing old version at ${OLD}..."
+    ${LSREGISTER} -u "${OLD}" &> /dev/null || true
+    rm -rf "${OLD}"
+done
 
 echo "Installing to ${INSTALL_PATH}..."
+mkdir -p "$(dirname "${INSTALL_PATH}")"
 cp -R "${APP_PATH}" "${INSTALL_PATH}"
 
 echo "Signing widget extension with sandbox entitlements..."
@@ -114,7 +149,7 @@ for LEGACY in "${LEGACY_STORES[@]}"; do
 done
 
 echo "Registering with LaunchServices..."
-/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R "${INSTALL_PATH}"
+${LSREGISTER} -f -R "${INSTALL_PATH}"
 
 echo "Registering widget with pluginkit..."
 pluginkit -a "${INSTALL_PATH}/Contents/PlugIns/BudgetingWidget.appex"

@@ -10,6 +10,9 @@ struct MacCategoryBreakdownView: View {
     @Query(sort: [SortDescriptor(\Tag.name)])
     private var tags: [Tag]
 
+    @Query(sort: [SortDescriptor(\MonthlyBudget.year), SortDescriptor(\MonthlyBudget.month)])
+    private var budgets: [MonthlyBudget]
+
     let month: Int
     let year: Int
 
@@ -20,6 +23,8 @@ struct MacCategoryBreakdownView: View {
         let totalEntryCount: Int
         let currentBudget: MonthlyBudget
         let remainder: Decimal
+        let carryover: Decimal
+        let adjustedRemainder: Decimal
         let savingsRate: Decimal?
         let tagColors: [String: Color]
         let largestTag: String?
@@ -45,6 +50,7 @@ struct MacCategoryBreakdownView: View {
         let expenses = sortedTagTotals.reduce(Decimal(0)) { $0 + $1.total }
         let currentBudget = BudgetStore.budgetForMonth(month, year: year, context: modelContext)
         let remainder = BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
+        let carryover = BudgetStore.carryover(month: month, year: year, entries: entries, budgets: budgets)
         let savingsRate = BudgetStore.savingsRate(savings: currentBudget.savings, investment: currentBudget.investment, income: currentBudget.income, remainder: remainder)
 
         var tagColors: [String: Color] = [:]
@@ -59,6 +65,8 @@ struct MacCategoryBreakdownView: View {
             totalEntryCount: totalEntryCount,
             currentBudget: currentBudget,
             remainder: remainder,
+            carryover: carryover,
+            adjustedRemainder: remainder + carryover,
             savingsRate: savingsRate,
             tagColors: tagColors,
             largestTag: largestTag
@@ -125,10 +133,13 @@ struct MacCategoryBreakdownView: View {
             metricRow("Bills", value: snap.currentBudget.bills, icon: "doc.text.fill", color: .orange)
             metricRow("Savings", value: snap.currentBudget.savings, icon: "leaf.fill", color: .blue)
             metricRow("Investment", value: snap.currentBudget.investment, icon: "chart.line.uptrend.xyaxis", color: .purple)
+            if snap.carryover != 0 {
+                metricRow("Carried over", value: snap.carryover, icon: "arrow.uturn.left.circle.fill", color: snap.carryover > 0 ? .green : .red)
+            }
 
             Divider()
 
-            metricRow("Remainder", value: snap.remainder, icon: snap.remainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill", color: snap.remainder >= 0 ? .green : .red, accent: true)
+            metricRow("Remainder", value: snap.adjustedRemainder, icon: snap.adjustedRemainder >= 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill", color: snap.adjustedRemainder >= 0 ? .green : .red, accent: true)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -178,6 +178,60 @@ struct BudgetStoreDaysTests {
     }
 }
 
+@Suite("BudgetStore carryover")
+struct BudgetStoreCarryoverTests {
+    private func date(month: Int, year: Int) -> Date {
+        Calendar.current.date(from: DateComponents(year: year, month: month, day: 1))!
+    }
+
+    @Test("Carries a negative previous remainder")
+    func negativePreviousRemainder() {
+        let previousBudget = MonthlyBudget(month: 4, year: 2026, income: 1000)
+        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
+
+        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(-300))
+    }
+
+    @Test("Carries a positive previous remainder")
+    func positivePreviousRemainder() {
+        let previousBudget = MonthlyBudget(month: 4, year: 2026, income: 1000)
+        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 300)]
+
+        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(700))
+    }
+
+    @Test("Does not carry without a configured previous budget")
+    func noPreviousBudget() {
+        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
+
+        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: []) == Decimal(0))
+    }
+
+    @Test("Does not carry an unconfigured previous budget")
+    func unconfiguredPreviousBudget() {
+        let previousBudget = MonthlyBudget(month: 4, year: 2026)
+        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
+
+        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(0))
+    }
+
+    @Test("Looks back across the year boundary")
+    func yearBoundary() {
+        let previousBudget = MonthlyBudget(month: 12, year: 2025, income: 1000)
+        let entries = [Entry(date: date(month: 12, year: 2025), item: "Spending", tag: "Other", amount: 1300)]
+
+        #expect(BudgetStore.carryover(month: 1, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(-300))
+    }
+
+    @Test("Ignores entries from other months")
+    func ignoresOtherMonths() {
+        let previousBudget = MonthlyBudget(month: 4, year: 2026, income: 1000, savings: 1000)
+        let entries = [Entry(date: date(month: 3, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
+
+        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(0))
+    }
+}
+
 @Suite("CSVImporter")
 struct CSVImporterTests {
     @Test("Parse simple CSV rows")
