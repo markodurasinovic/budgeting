@@ -29,8 +29,6 @@ struct DetailView: View {
         let total: Decimal
         let expenses: Decimal
         let remainder: Decimal
-        let carryover: Decimal
-        let adjustedRemainder: Decimal
         let daysRemaining: Int
         let savingsRate: Decimal?
         let tagTotals: [(tag: String, total: Decimal)]
@@ -95,7 +93,6 @@ struct DetailView: View {
 
         let currentBudget = BudgetStore.budgetForMonth(month, year: year, context: modelContext)
         let remainder = BudgetStore.remainder(income: currentBudget.income, expenses: expenses, bills: currentBudget.bills, savings: currentBudget.savings, investment: currentBudget.investment)
-        let carryover = BudgetStore.carryover(month: month, year: year, entries: entries, budgets: budgets)
         let daysRemaining = BudgetStore.daysRemainingInMonth(month: month, year: year)
         let savingsRate = BudgetStore.savingsRate(savings: currentBudget.savings, investment: currentBudget.investment, income: currentBudget.income, remainder: remainder)
 
@@ -126,8 +123,6 @@ struct DetailView: View {
             total: total,
             expenses: expenses,
             remainder: remainder,
-            carryover: carryover,
-            adjustedRemainder: remainder + carryover,
             daysRemaining: daysRemaining,
             savingsRate: savingsRate,
             tagTotals: sortedTagTotals,
@@ -184,22 +179,15 @@ struct DetailView: View {
     private func headerBar(_ snap: Snapshot) -> some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(MoneyHelper.format(snap.adjustedRemainder))
+                Text(MoneyHelper.format(snap.remainder))
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(snap.adjustedRemainder >= 0 ? Color.green : Color.red)
-                if snap.daysRemaining > 0 && snap.adjustedRemainder != 0 {
-                    Text("\(MoneyHelper.format(snap.adjustedRemainder / Decimal(snap.daysRemaining))) / day")
+                    .foregroundStyle(snap.remainder >= 0 ? Color.green : Color.red)
+                if snap.daysRemaining > 0 && snap.remainder != 0 {
+                    Text("\(MoneyHelper.format(snap.remainder / Decimal(snap.daysRemaining))) / day")
                         .font(.callout)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
-                }
-                if snap.carryover != 0 {
-                    let previous = PortfolioStore.previousMonth(for: month, year: year)
-                    Text("\(MoneyHelper.format(snap.carryover)) carried over from \(Formatters.monthYearString(month: previous.month, year: previous.year))")
-                        .font(.caption)
-                        .monospacedDigit()
-                        .foregroundStyle(snap.carryover > 0 ? .green : .red)
                 }
             }
             Spacer()

@@ -44,7 +44,7 @@ struct MacPortfolioEditView: View {
                     fieldRow("S&S ISA", text: $ssIsaText, previous: previousPortfolio?.ssIsa)
                     fieldRow("Cash ISA", text: $cashIsaText, previous: previousPortfolio?.cashIsa)
                     fieldRow("LISA", text: $lisaText, previous: previousPortfolio?.lisa)
-                    fieldRow("Crypto", text: $cryptoText, previous: previousPortfolio?.crypto)
+                    fieldRow("Regular Savings", text: $cryptoText, previous: previousPortfolio?.crypto)
                     fieldRow("Pension", text: $pensionText, previous: previousPortfolio?.pension)
                     TextField("Notes", text: $notesText)
                 }

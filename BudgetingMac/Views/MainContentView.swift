@@ -32,6 +32,15 @@ struct MainContentView: View {
                 MacPortfolioView(month: month, year: year)
             } else if selectedTag == "___DAILY___" {
                 MacDailySpendView(month: month, year: year)
+            } else if selectedTag == "___YEARLY___" {
+                MacYearlyAveragesView(
+                    year: year,
+                    onShiftYear: { delta in
+                        if let shifted = Calendar.current.date(byAdding: .month, value: delta * 12, to: selectedMonth) {
+                            selectedMonth = shifted
+                        }
+                    }
+                )
             } else {
                 DetailView(
                     month: month,

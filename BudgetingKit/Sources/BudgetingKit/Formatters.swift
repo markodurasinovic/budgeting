@@ -15,6 +15,13 @@ public enum Formatters {
         return f
     }()
 
+    public static let shortMonth: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.dateFormat = "MMM"
+        return f
+    }()
+
     public static let csvDateM_d_yyyy: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
@@ -40,6 +47,14 @@ public enum Formatters {
         let components = DateComponents(year: year, month: month, day: 1)
         guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
         return monthYear.string(from: date)
+    }
+
+    public static func shortMonthString(month: Int) -> String {
+        guard (1...12).contains(month),
+              let date = Calendar.current.date(from: DateComponents(year: 2001, month: month, day: 1)) else {
+            return "M\(month)"
+        }
+        return shortMonth.string(from: date)
     }
 
     public static func shortDayString(day: Int, month: Int, year: Int) -> String {

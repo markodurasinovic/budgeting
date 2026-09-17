@@ -183,6 +183,78 @@ public enum BudgetStore {
         return totals.sorted { $0.value > $1.value }.map { (tag: $0.key, total: $0.value) }
     }
 
+    // MARK: - Year
+
+    public static func entriesForYear(_ entries: [Entry], year: Int) -> [Entry] {
+        let calendar = Calendar.current
+        return entries.filter { entry in
+            calendar.dateComponents([.year], from: entry.date).year == year
+        }
+    }
+
+    public static func completedMonthsInYear(year: Int) -> Int {
+        let now = Date()
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: now)
+        if year == currentYear {
+            return calendar.component(.month, from: now) - 1
+        }
+        if year < currentYear {
+            return 12
+        }
+        return 0
+    }
+
+    public static func entriesForCompletedMonths(_ entries: [Entry], year: Int) -> [Entry] {
+        let completed = completedMonthsInYear(year: year)
+        guard completed > 0 else { return [] }
+        let calendar = Calendar.current
+        return entriesForYear(entries, year: year).filter { entry in
+            let month = calendar.dateComponents([.month], from: entry.date).month ?? 0
+            return month <= completed
+        }
+    }
+
+    public static func totalForCompletedMonths(_ entries: [Entry], year: Int) -> Decimal {
+        entriesForCompletedMonths(entries, year: year).reduce(Decimal(0)) { $0 + $1.amount }
+    }
+
+    public static func averageMonthlySpend(_ entries: [Entry], year: Int) -> Decimal {
+        let completed = completedMonthsInYear(year: year)
+        guard completed > 0 else { return Decimal(0) }
+        return totalForCompletedMonths(entries, year: year) / Decimal(completed)
+    }
+
+    public static func totalsByMonthForYear(_ entries: [Entry], year: Int) -> [(month: Int, total: Decimal)] {
+        let yearEntries = entriesForYear(entries, year: year)
+        let calendar = Calendar.current
+        var totals: [Int: Decimal] = [:]
+        for entry in yearEntries {
+            if let month = calendar.dateComponents([.month], from: entry.date).month {
+                totals[month, default: Decimal(0)] += entry.amount
+            }
+        }
+        return (1...12).map { month in
+            (month: month, total: totals[month] ?? Decimal(0))
+        }
+    }
+
+    public static func totalsByTagForCompletedMonths(_ entries: [Entry], year: Int) -> [(tag: String, total: Decimal)] {
+        let completedEntries = entriesForCompletedMonths(entries, year: year)
+        var totals: [String: Decimal] = [:]
+        for entry in completedEntries {
+            totals[entry.tag, default: Decimal(0)] += entry.amount
+        }
+        return totals.sorted { abs($0.value) > abs($1.value) }.map { (tag: $0.key, total: $0.value) }
+    }
+
+    public static func averageMonthlyByTag(_ entries: [Entry], year: Int) -> [(tag: String, average: Decimal, total: Decimal)] {
+        let completed = Decimal(completedMonthsInYear(year: year))
+        return totalsByTagForCompletedMonths(entries, year: year).map { item in
+            (tag: item.tag, average: completed > 0 ? item.total / completed : Decimal(0), total: item.total)
+        }
+    }
+
     public static func tagColorHex(_ tags: [Tag], for tagName: String) -> String? {
         guard let tag = tags.first(where: { $0.name.lowercased() == tagName.lowercased() }) else {
             return nil
@@ -232,25 +304,6 @@ public enum BudgetStore {
     public static func savingsRate(savings: Decimal, investment: Decimal, income: Decimal, remainder: Decimal) -> Decimal? {
         guard income > 0 else { return nil }
         return (savings + investment + remainder) / income
-    }
-
-    public static func carryover(month: Int, year: Int, entries: [Entry], budgets: [MonthlyBudget]) -> Decimal {
-        let previous = PortfolioStore.previousMonth(for: month, year: year)
-        guard let previousBudget = budgets.first(where: {
-            $0.month == previous.month && $0.year == previous.year
-        }), previousBudget.income > 0 else {
-            return Decimal(0)
-        }
-
-        let previousExpenses = totalForMonth(entries, month: previous.month, year: previous.year)
-        let previousRemainder = remainder(
-            income: previousBudget.income,
-            expenses: previousExpenses,
-            bills: previousBudget.bills,
-            savings: previousBudget.savings,
-            investment: previousBudget.investment
-        )
-        return previousRemainder
     }
 
     public static func runningTotalSavings(budgets: [MonthlyBudget], expensesByMonth: [(month: Int, year: Int, total: Decimal)]) -> Decimal {

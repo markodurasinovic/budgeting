@@ -63,6 +63,8 @@ struct SidebarView: View {
                     .tag("___PORTFOLIO___" as String)
                 Label("Daily Spend", systemImage: "calendar")
                     .tag("___DAILY___" as String)
+                Label("Yearly Averages", systemImage: "chart.bar.xaxis")
+                    .tag("___YEARLY___" as String)
             }
 
             Section("Months") {

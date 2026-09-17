@@ -134,7 +134,7 @@ struct MacPortfolioView: View {
             investmentRow("S&S ISA", value: row.portfolio.ssIsa, icon: "chart.bar.fill", color: .blue)
             investmentRow("Cash ISA", value: row.portfolio.cashIsa, icon: "banknote.fill", color: .green)
             investmentRow("LISA", value: row.portfolio.lisa, icon: "house.fill", color: .orange)
-            investmentRow("Crypto", value: row.portfolio.crypto, icon: "bitcoinsign.circle.fill", color: .purple)
+            investmentRow("Regular Savings", value: row.portfolio.crypto, icon: "banknote.fill", color: .purple)
 
             totalRow("Total", value: row.totalExPension, delta: nil)
 
@@ -185,7 +185,7 @@ struct MacPortfolioView: View {
             ("S&S ISA", row.portfolio.ssIsa, .blue),
             ("Cash ISA", row.portfolio.cashIsa, .green),
             ("LISA", row.portfolio.lisa, .orange),
-            ("Crypto", row.portfolio.crypto, .purple),
+            ("Regular Savings", row.portfolio.crypto, .purple),
             ("Pension", row.portfolio.pension, .teal),
         ].filter { $0.1 > 0 }
 

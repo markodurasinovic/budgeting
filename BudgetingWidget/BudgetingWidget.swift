@@ -10,7 +10,6 @@ struct BudgetEntry: TimelineEntry {
     let expenses: Double
     let savings: Double
     let investment: Double
-    let carryover: Double
     let daysRemaining: Int
     let daysElapsed: Int
     let totalDays: Int
@@ -28,7 +27,6 @@ struct BudgetTimelineProvider: TimelineProvider {
             remainder: 0, dailyBudget: 0,
             income: 0, bills: 0, expenses: 0,
             savings: 0, investment: 0,
-            carryover: 0,
             daysRemaining: 0, daysElapsed: 0, totalDays: 30,
             hasData: false,
             month: Calendar.current.component(.month, from: Date()),
@@ -61,7 +59,6 @@ struct BudgetTimelineProvider: TimelineProvider {
             expenses: defaults.double(forKey: "widget_expenses"),
             savings: defaults.double(forKey: "widget_savings"),
             investment: defaults.double(forKey: "widget_investment"),
-            carryover: defaults.double(forKey: "widget_carryover"),
             daysRemaining: defaults.integer(forKey: "widget_daysRemaining"),
             daysElapsed: defaults.integer(forKey: "widget_daysElapsed"),
             totalDays: defaults.integer(forKey: "widget_totalDays"),
@@ -191,15 +188,6 @@ private struct MediumWidgetView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    if entry.carryover != 0 {
-                        Text(entry.carryover > 0
-                             ? "\(formatMoney(entry.carryover)) surplus carried over"
-                             : "\(formatMoney(entry.carryover)) carried over")
-                            .font(.caption2)
-                            .monospacedDigit()
-                            .foregroundStyle(entry.carryover > 0 ? .green : .red)
-                    }
-
                     Spacer(minLength: 0)
 
                     Link(destination: URL(string: "budgeting://add-entry")!) {
@@ -290,15 +278,6 @@ private struct LargeWidgetView: View {
                                 .font(.caption)
                                 .monospacedDigit()
                                 .foregroundStyle(.secondary)
-                        }
-
-                        if entry.carryover != 0 {
-                            Text(entry.carryover > 0
-                                 ? "\(formatMoney(entry.carryover)) surplus carried over"
-                                 : "\(formatMoney(entry.carryover)) carried over")
-                                .font(.caption2)
-                                .monospacedDigit()
-                                .foregroundStyle(entry.carryover > 0 ? .green : .red)
                         }
                     }
 
@@ -392,7 +371,6 @@ private func formatMoney(_ value: Double) -> String {
         date: Date(), remainder: 450.75, dailyBudget: 18.75,
         income: 3500, bills: 1250, expenses: 520,
         savings: 500, investment: 200,
-        carryover: 0,
         daysRemaining: 24, daysElapsed: 6, totalDays: 30,
         hasData: true, month: 6, year: 2026
     )
@@ -400,7 +378,6 @@ private func formatMoney(_ value: Double) -> String {
         date: Date(), remainder: -150.50, dailyBudget: -6.27,
         income: 3500, bills: 1250, expenses: 2200,
         savings: 500, investment: 200,
-        carryover: -300,
         daysRemaining: 24, daysElapsed: 6, totalDays: 30,
         hasData: true, month: 6, year: 2026
     )

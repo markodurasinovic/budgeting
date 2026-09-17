@@ -178,57 +178,136 @@ struct BudgetStoreDaysTests {
     }
 }
 
-@Suite("BudgetStore carryover")
-struct BudgetStoreCarryoverTests {
-    private func date(month: Int, year: Int) -> Date {
-        Calendar.current.date(from: DateComponents(year: year, month: month, day: 1))!
+@Suite("BudgetStore year")
+struct BudgetStoreYearTests {
+    private func makeDate(year: Int, month: Int, day: Int = 1) -> Date {
+        Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
-    @Test("Carries a negative previous remainder")
-    func negativePreviousRemainder() {
-        let previousBudget = MonthlyBudget(month: 4, year: 2026, income: 1000)
-        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
-
-        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(-300))
+    @Test("completedMonthsInYear is 12 for a past year")
+    func completedMonthsPastYear() {
+        let pastYear = Calendar.current.component(.year, from: Date()) - 1
+        #expect(BudgetStore.completedMonthsInYear(year: pastYear) == 12)
     }
 
-    @Test("Carries a positive previous remainder")
-    func positivePreviousRemainder() {
-        let previousBudget = MonthlyBudget(month: 4, year: 2026, income: 1000)
-        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 300)]
-
-        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(700))
+    @Test("completedMonthsInYear excludes the current month")
+    func completedMonthsCurrentYear() {
+        let calendar = Calendar.current
+        let now = Date()
+        let currentYear = calendar.component(.year, from: now)
+        let currentMonth = calendar.component(.month, from: now)
+        #expect(BudgetStore.completedMonthsInYear(year: currentYear) == currentMonth - 1)
     }
 
-    @Test("Does not carry without a configured previous budget")
-    func noPreviousBudget() {
-        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
-
-        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: []) == Decimal(0))
+    @Test("completedMonthsInYear is 0 for a future year")
+    func completedMonthsFutureYear() {
+        let futureYear = Calendar.current.component(.year, from: Date()) + 1
+        #expect(BudgetStore.completedMonthsInYear(year: futureYear) == 0)
     }
 
-    @Test("Does not carry an unconfigured previous budget")
-    func unconfiguredPreviousBudget() {
-        let previousBudget = MonthlyBudget(month: 4, year: 2026)
-        let entries = [Entry(date: date(month: 4, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
-
-        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(0))
+    @Test("current month entries are excluded from completed-month totals but kept in monthly totals")
+    func currentMonthExcluded() {
+        let calendar = Calendar.current
+        let now = Date()
+        let currentYear = calendar.component(.year, from: now)
+        let currentMonth = calendar.component(.month, from: now)
+        let entries = [
+            Entry(date: makeDate(year: currentYear, month: currentMonth), item: "Coffee", tag: "Food", amount: Decimal(-100)),
+        ]
+        #expect(BudgetStore.entriesForYear(entries, year: currentYear).count == 1)
+        #expect(BudgetStore.entriesForCompletedMonths(entries, year: currentYear).isEmpty)
+        #expect(BudgetStore.totalForCompletedMonths(entries, year: currentYear) == Decimal(0))
+        #expect(BudgetStore.averageMonthlyByTag(entries, year: currentYear).isEmpty)
+        #expect(BudgetStore.totalsByMonthForYear(entries, year: currentYear)[currentMonth - 1].total == Decimal(-100))
     }
 
-    @Test("Looks back across the year boundary")
-    func yearBoundary() {
-        let previousBudget = MonthlyBudget(month: 12, year: 2025, income: 1000)
-        let entries = [Entry(date: date(month: 12, year: 2025), item: "Spending", tag: "Other", amount: 1300)]
-
-        #expect(BudgetStore.carryover(month: 1, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(-300))
+    @Test("totalForCompletedMonths sums only completed months of that year")
+    func totalForCompletedMonthsFilters() {
+        let year = Calendar.current.component(.year, from: Date()) - 1
+        let entries = [
+            Entry(date: makeDate(year: year, month: 1), item: "Coffee", tag: "Food", amount: Decimal(string: "-3.50")!),
+            Entry(date: makeDate(year: year, month: 6), item: "Rent", tag: "Housing", amount: Decimal(-1200)),
+            Entry(date: makeDate(year: year + 1, month: 1), item: "Rent", tag: "Housing", amount: Decimal(-1200)),
+        ]
+        #expect(BudgetStore.totalForCompletedMonths(entries, year: year) == Decimal(string: "-1203.50"))
+        #expect(BudgetStore.entriesForCompletedMonths(entries, year: year).count == 2)
     }
 
-    @Test("Ignores entries from other months")
-    func ignoresOtherMonths() {
-        let previousBudget = MonthlyBudget(month: 4, year: 2026, income: 1000, savings: 1000)
-        let entries = [Entry(date: date(month: 3, year: 2026), item: "Spending", tag: "Other", amount: 1300)]
+    @Test("totalsByMonthForYear returns 12 dense months")
+    func totalsByMonthDense() {
+        let year = Calendar.current.component(.year, from: Date()) - 1
+        let entries = [
+            Entry(date: makeDate(year: year, month: 2), item: "Rent", tag: "Housing", amount: Decimal(-100)),
+            Entry(date: makeDate(year: year, month: 2, day: 15), item: "Coffee", tag: "Food", amount: Decimal(-50)),
+            Entry(date: makeDate(year: year + 1, month: 3), item: "Rent", tag: "Housing", amount: Decimal(-999)),
+        ]
+        let totals = BudgetStore.totalsByMonthForYear(entries, year: year)
+        #expect(totals.count == 12)
+        #expect(totals[0].month == 1 && totals[0].total == Decimal(0))
+        #expect(totals[1].month == 2 && totals[1].total == Decimal(-150))
+        #expect(totals[2].month == 3 && totals[2].total == Decimal(0))
+        #expect(totals[11].month == 12 && totals[11].total == Decimal(0))
+    }
 
-        #expect(BudgetStore.carryover(month: 5, year: 2026, entries: entries, budgets: [previousBudget]) == Decimal(0))
+    @Test("totalsByTagForCompletedMonths sums by tag sorted by absolute total")
+    func totalsByTagForCompletedMonthsSorted() {
+        let year = Calendar.current.component(.year, from: Date()) - 1
+        let entries = [
+            Entry(date: makeDate(year: year, month: 1), item: "Coffee", tag: "Food", amount: Decimal(-100)),
+            Entry(date: makeDate(year: year, month: 4), item: "Rent", tag: "Housing", amount: Decimal(-500)),
+            Entry(date: makeDate(year: year, month: 8), item: "Paycheck", tag: "Salary", amount: Decimal(300)),
+            Entry(date: makeDate(year: year + 1, month: 1), item: "Rent", tag: "Housing", amount: Decimal(-999)),
+        ]
+        let totals = BudgetStore.totalsByTagForCompletedMonths(entries, year: year)
+        #expect(totals.count == 3)
+        #expect(totals[0].tag == "Housing" && totals[0].total == Decimal(-500))
+        #expect(totals[1].tag == "Salary" && totals[1].total == Decimal(300))
+        #expect(totals[2].tag == "Food" && totals[2].total == Decimal(-100))
+    }
+
+    @Test("averageMonthlySpend divides by months elapsed")
+    func averageMonthlySpendPastYear() {
+        let year = Calendar.current.component(.year, from: Date()) - 1
+        let entries = [
+            Entry(date: makeDate(year: year, month: 1), item: "Rent", tag: "Housing", amount: Decimal(-1200)),
+            Entry(date: makeDate(year: year, month: 2), item: "Rent", tag: "Housing", amount: Decimal(-1200)),
+            Entry(date: makeDate(year: year, month: 3), item: "Rent", tag: "Housing", amount: Decimal(-600)),
+        ]
+        #expect(BudgetStore.averageMonthlySpend(entries, year: year) == Decimal(-250))
+    }
+
+    @Test("averageMonthlySpend is zero for a future year")
+    func averageMonthlySpendFutureYear() {
+        let year = Calendar.current.component(.year, from: Date()) + 1
+        let entries = [
+            Entry(date: makeDate(year: year, month: 1), item: "Rent", tag: "Housing", amount: Decimal(-1200)),
+        ]
+        #expect(BudgetStore.averageMonthlySpend(entries, year: year) == Decimal(0))
+    }
+
+    @Test("averageMonthlyByTag divides each tag total by months elapsed")
+    func averageMonthlyByTagDivides() {
+        let year = Calendar.current.component(.year, from: Date()) - 1
+        let entries = [
+            Entry(date: makeDate(year: year, month: 1), item: "Rent", tag: "Housing", amount: Decimal(-1200)),
+            Entry(date: makeDate(year: year, month: 2), item: "Rent", tag: "Housing", amount: Decimal(-1200)),
+            Entry(date: makeDate(year: year, month: 1), item: "Coffee", tag: "Food", amount: Decimal(-120)),
+        ]
+        let averages = BudgetStore.averageMonthlyByTag(entries, year: year)
+        let housing = averages.first { $0.tag == "Housing" }!
+        let food = averages.first { $0.tag == "Food" }!
+        #expect(housing.total == Decimal(-2400))
+        #expect(housing.average == Decimal(-200))
+        #expect(food.total == Decimal(-120))
+        #expect(food.average == Decimal(-10))
+    }
+
+    @Test("shortMonthString returns short month names")
+    func shortMonthNames() {
+        #expect(Formatters.shortMonthString(month: 1) == "Jan")
+        #expect(Formatters.shortMonthString(month: 12) == "Dec")
+        #expect(Formatters.shortMonthString(month: 0) == "M0")
+        #expect(Formatters.shortMonthString(month: 13) == "M13")
     }
 }
 
